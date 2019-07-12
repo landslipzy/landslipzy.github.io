@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="学习使我快乐">
+    <meta name="keywords"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>C++ 释疑（一） - 彭侦的博客 | PengZhen's Blog</title>
+
+    <link rel="canonical" href="https://chorior.github.io/2017/03/01/C++-basis-1/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <!--<link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">-->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">PengZhen's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __FishNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __FishNav__.close()
+        }else{
+            __FishNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close FishNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __FishNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/C++_logo.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/C++_logo.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#C++" title="C++">C++</a>
+                        
+                        <a class="tag" href="/tags/#C++ primer" title="C++ primer">C++ primer</a>
+                        
+                    </div>
+                    <h1>C++ 释疑（一）</h1>
+                    
+                    
+                    <h2 class="subheading"> 一些常见错误规避方法 </h2>
+                    
+                    <span class="meta">Posted by pengzhen on March 1, 2017</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>本文是我重温《C++ Primer 5》第一部分 C++ 基础时，摘录的一些要点，适合初级程序员食用。</p>
+
+<h1 id="section">本文结构</h1>
+
+<ul>
+  <li><a href="#annotation">注释选择</a></li>
+  <li><a href="#unsigned_type">无符号类型不能混用</a></li>
+  <li><a href="#identifier">标识符定义</a></li>
+  <li><a href="#nullptr">空指针选择</a></li>
+  <li><a href="#choose_header">C 或 C++ 标准库头文件选择</a></li>
+  <li><a href="#front_or_post">递增递减选择前置还是后置</a></li>
+  <li><a href="#sizeof">sizeof 运算符</a></li>
+  <li><a href="#forced_conversion">C 或 C++ 强制类型转换选择</a></li>
+  <li><a href="#constant_reference">尽量使用常量引用传递参数</a></li>
+  <li><a href="#array_params">数组形参传递</a>
+    <ul>
+      <li><a href="#protect_array_params">三种确保数组不越界的函数定义方法</a></li>
+    </ul>
+  </li>
+  <li><a href="#flexible_arguments">可变形参函数</a></li>
+  <li><a href="#about_return_value">关于返回值</a></li>
+  <li><a href="#overloaded_and_inline_function">关于重载函数、内联函数</a></li>
+  <li><a href="#function_ptr">函数指针</a></li>
+  <li><a href="#class">类</a>
+    <ul>
+      <li><a href="#this_ptr">this 指针</a></li>
+      <li><a href="#constructor">构造函数</a></li>
+      <li><a href="#copy_assign_and_destructor">拷贝、赋值和析构</a></li>
+      <li><a href="#access_control">访问控制符</a></li>
+      <li><a href="#static_class_members">类的静态成员</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="annotation">注释选择</h2>
+
+<p><strong>一律使用C++单行注释<code class="highlighter-rouge">//</code>，因为界定符<code class="highlighter-rouge">/* */</code>注释不能嵌套</strong>。</p>
+
+<p>如果你一定要使用界定符<code class="highlighter-rouge">/* */</code>的话，建议每行都以一个星号*开头，用以指出整个范围都是多行注释的一部分。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+</span><span class="cm">/*
+ * main function
+ * print "Hello World!"
+ */</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"Hello World!</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="unsigned_type">无符号类型不能混用</h2>
+
+<p>当一个算数表达式中既有无符号数又有有符号数，且其中的无符号类型不小于带符号类型时，有符号数会被转为无符号数。</p>
+
+<p>特别是当有符号数是一个负数时，<strong>转换后的无符号数结果等于这个负数加上对应无符号数的模</strong>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">unsigned</span> <span class="n">u</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="o">-</span><span class="mi">42</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">i</span> <span class="o">+</span> <span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>   <span class="c1">// 84
+</span><span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">i</span> <span class="o">+</span> <span class="n">u</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>   <span class="c1">// maybe 10 + (2^32 - 42) = 4294967264
+</span></code></pre>
+</div>
+
+<p>这里还有一个隐式无限循环的例子:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">for</span><span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="o">--</span> <span class="n">i</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>当有符号数类型大于无符号类型时：</p>
+
+<ul>
+  <li>如果无符号类型的所有值都能存在该带符号类型中，则无符号数转换成有符号数；</li>
+  <li>如果无符号类型的所有值不能都存在该带符号类型中，则有符号数转换成无符号数。</li>
+</ul>
+
+<h2 id="default_initialization">默认初始化</h2>
+
+<p>如果内置类型的变量未被显式初始化，那么它的值由定义的位置决定。</p>
+
+<p><strong>定义于任何函数体之外的内置类型被初始化为0，定义于函数体内部的内置类型将不被初始化</strong>。</p>
+
+<p>非内置类型的类对象如果没有显式初始化得话，其值决定于该类是否允许隐式初始化（如<code class="highlighter-rouge">std::string</code>类就允许隐式初始化）。</p>
+
+<p>内置类型包含<code class="highlighter-rouge">bool</code>,<code class="highlighter-rouge">char</code>,<code class="highlighter-rouge">wchar_t</code>,<code class="highlighter-rouge">char16_t</code>,<code class="highlighter-rouge">char32_t</code>,<code class="highlighter-rouge">short</code>,<code class="highlighter-rouge">int</code>,<code class="highlighter-rouge">long</code>,<code class="highlighter-rouge">long long</code>,<code class="highlighter-rouge">float</code>,<code class="highlighter-rouge">double</code>,<code class="highlighter-rouge">long double</code>.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;string&gt;          // std::string
+#include &lt;cstring&gt;         // wchar_t, char16_t
+</span>
+<span class="n">bool</span> <span class="n">flag</span><span class="p">;</span>                 <span class="c1">// false
+</span><span class="kt">wchar_t</span> <span class="n">arr0</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>          <span class="c1">// 0 '\0'
+</span><span class="n">char16_t</span> <span class="n">arr1</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>         <span class="c1">// 0 u'\0'
+</span><span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>                 <span class="c1">// 0
+</span><span class="kt">double</span> <span class="n">d</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>              <span class="c1">// 0.00
+</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="p">;</span>           <span class="c1">// ""
+</span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">bool</span> <span class="n">flag1</span><span class="p">;</span>            <span class="c1">// true
+</span>	<span class="kt">wchar_t</span> <span class="n">arr01</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>     <span class="c1">// 52428 '쳌'
+</span>	<span class="n">char16_t</span> <span class="n">arr11</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
+	<span class="kt">int</span> <span class="n">a1</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
+	<span class="kt">double</span> <span class="n">d1</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="p">;</span>       <span class="c1">// ""
+</span>	<span class="n">getchar</span><span class="p">();</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>只要是内置类型，一律初始化！</strong></p>
+
+<h2 id="identifier">标识符定义</h2>
+
+<p><strong>C++ 的标识符由字符、数字、下划线组成，其中数字不能作为开头</strong>。</p>
+
+<p>C++ 为标准库保留了一些名字</p>
+
+<ul>
+  <li>用户自定义的标识符不能连续出现两个下划线，也不能下划线紧连大写字母开头；</li>
+  <li>定义在函数体外地标识符不能以下划线开头。</li>
+</ul>
+
+<h3 id="section-1">变量命名规范</h3>
+
+<ul>
+  <li>标识符要体现其实际含义；</li>
+  <li>变量名一般使用小写字母；</li>
+  <li>自定义类名一般使用大写字母开头；</li>
+  <li>多个单词用下划线连接，或者从第二个单词开始首字母大写。</li>
+</ul>
+
+<h2 id="nullptr">空指针选择</h2>
+
+<p>空指针不指向任何对象，在试图使用一个指针时，必须检查它是否为空。</p>
+
+<p>建立空指针有下列三种方法：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="o">*</span><span class="n">pi</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span> <span class="o">*</span><span class="n">p2</span> <span class="o">=</span> <span class="n">nullptr</span><span class="p">;</span>
+<span class="kt">int</span> <span class="o">*</span><span class="n">p3</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</code></pre>
+</div>
+
+<p><strong>最好使用nullptr，尽量避免使用NULL。所有指针都必须初始化</strong>。</p>
+
+<h2 id="choose_header">C 或 C++ 标准库头文件选择</h2>
+
+<p>C++ 兼容 C 语言标准库，去掉了 C 头文件的后缀<code class="highlighter-rouge">.h</code>，并添加前缀<code class="highlighter-rouge">c</code>，表明这是一个 C 语言标准库的头文件。</p>
+
+<p>对应的头文件在内容上是一样的，但是在名为<code class="highlighter-rouge">cname</code>的头文件中定义的名字从属于命名空间<code class="highlighter-rouge">std</code>，而<code class="highlighter-rouge">name.h</code>头文件中的却不然。</p>
+
+<p><strong>C++ 程序一律使用名为<code class="highlighter-rouge">cname</code>的头文件</strong>。</p>
+
+<h2 id="front_or_post">递增递减选择前置还是后置</h2>
+
+<p>前置版本的递增（递减）运算符将值加一（减一）后直接返回改变了的对象；</p>
+
+<p>后置版本的递增（递减）运算符需要将原始值存储下来以便返回这个未修改的内容，然后再加一（减一）。</p>
+
+<p><strong>若无特殊需求，一律使用前缀版本的递增或递减运算符</strong>。</p>
+
+<h2 id="sizeof">sizeof 运算符</h2>
+
+<p>sizeof 运算符返回一条表达式或一个类型名所占的字节数。</p>
+
+<p>sizeof 运算符满足右结合律，返回值是一个<code class="highlighter-rouge">size_t</code>类型的常量表达式。</p>
+
+<p>sizeof 运算符的结果部分依赖于其作用的类型：</p>
+
+<ul>
+  <li>对char或者类型为char的表达式，结果为1；</li>
+  <li>对引用类型变量，结果为被引用对象所占空间的字节数；</li>
+  <li>对指针，结果为指针本身所占空间的大小；</li>
+  <li>对解引用指针，结果为指针指向的对象所占空间的字节数，<strong>指针不需要有效</strong>；</li>
+  <li>对数组，结果为整个数组所占空间的字节数（<strong>sizeof不会将数组作为指针处理，指针也不会被作为数组处理</strong>）；</li>
+  <li>对<code class="highlighter-rouge">std::string</code>对象或<code class="highlighter-rouge">vector</code>对象，结果只返回该类型固定部分的大小，不会计算对象中的元素占用了多少字节。</li>
+</ul>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+	<span class="n">string</span> <span class="n">str</span><span class="p">(</span><span class="s">"hahah"</span><span class="p">);</span>
+	<span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">vec0</span><span class="p">(</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+	<span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">vec1</span><span class="p">(</span> <span class="mi">10</span><span class="p">,</span> <span class="s">"haha"</span> <span class="p">);</span>
+
+	<span class="c1">// 40 32 32
+</span>	<span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">" "</span> <span class="o">&lt;&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">" "</span> <span class="o">&lt;&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+	<span class="c1">// 40 32 32
+</span>	<span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">str</span><span class="p">)</span>    <span class="o">&lt;&lt;</span> <span class="s">" "</span> <span class="o">&lt;&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">vec0</span><span class="p">)</span>        <span class="o">&lt;&lt;</span> <span class="s">" "</span> <span class="o">&lt;&lt;</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">vec1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+	<span class="n">getchar</span><span class="p">();</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="forced_conversion">C 或 C++ 强制类型转换选择</h2>
+
+<p>C++ 强制类型转换包含 <code class="highlighter-rouge">static_cast</code>, <code class="highlighter-rouge">dynamic_cast</code>, <code class="highlighter-rouge">const_cast</code>, <code class="highlighter-rouge">reinterpret_cast</code>。</p>
+
+<p><code class="highlighter-rouge">static_cast</code>: 任何具有明确定义的类型转换，只要不包含底层const，都可以使用<code class="highlighter-rouge">static_cast</code>）；</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">double</span> <span class="n">d</span> <span class="o">=</span> <span class="mf">3.14</span><span class="p">;</span>
+<span class="kt">void</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">d</span><span class="p">;</span>
+<span class="kt">double</span> <span class="o">*</span><span class="n">dp</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">const_cast</code>: 只改变运算对象的底层const，不能用于改变类型；</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pc</span><span class="p">;</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">pc</span><span class="p">);</span>  <span class="c1">// 正确，但通过p写值是未定义的行为
+</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">pc</span><span class="p">);</span>          <span class="c1">// 正确，字符串字面值转换成string类型
+</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">pc</span><span class="p">);</span>           <span class="c1">// 错误，const_cast 只改变常量属性，不能用于改变类型
+</span></code></pre>
+</div>
+
+<p><code class="highlighter-rouge">reinterpret_cast</code>: 为运算对象的位模式提供较低层次上的重新解释，这往往会伴随很多未定义的事情发生。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="o">*</span><span class="n">ip</span><span class="p">;</span>
+<span class="kt">char</span> <span class="o">*</span><span class="n">pc</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">ip</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p>关于底层const与顶层const: 顶层const表示本身是个常量，而底层const表示指向的对象是个常量。</p>
+
+<p>C 风格的强制类型转换根据涉及的类型，分别具有与<code class="highlighter-rouge">const_cast</code>, <code class="highlighter-rouge">static_cast</code>或<code class="highlighter-rouge">reinterpret_cast</code>相似的行为；但表现形式却不如C++强制类型转换来的清晰明了，一旦转换出现问题，很难追踪。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>type(expr);
+(type)expr;
+</code></pre>
+</div>
+
+<p><strong>如非必要情况下，避免使用强制类型转换，如果一定要的话，建议使用 C++ 强制类型转换</strong>。</p>
+
+<h2 id="constant_reference">尽量使用常量引用传递参数</h2>
+
+<p>拷贝大的类类型对象或者容器对象比较低效，甚至有的类类型根本就不支持拷贝操作，这时候应该使用引用传递方式传递参数。</p>
+
+<p>如果函数无须改变引用形参的值，那么最好将其声明为常量引用。因为我们可以将一个非常量对象传递给常量形参，但是常量对象却不能传递给非常量形参。</p>
+
+<p>如果你强行将一个常量对象转成非常量对象，然后再传递给非常量形参的话，万一程序运行过程中出现什么异常改变了常量对象，这就会造成非常严重的问题。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="n">func0</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">);</span>
+<span class="kt">void</span> <span class="n">func1</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="p">);</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="p">(</span><span class="s">"test"</span><span class="p">);</span>
+<span class="n">func0</span><span class="p">(</span><span class="o">&amp;</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>                        <span class="c1">// OK
+</span><span class="n">func0</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">str</span><span class="p">.</span><span class="n">c_str</span><span class="p">()));</span> <span class="c1">// OK
+</span><span class="n">func1</span><span class="p">(</span><span class="n">str</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>                    <span class="c1">// 很安全
+</span>
+<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">cstr</span> <span class="o">=</span> <span class="s">"hahah"</span><span class="p">;</span>
+<span class="n">func0</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">cstr</span><span class="p">));</span>        <span class="c1">// 很危险
+</span><span class="n">func1</span><span class="p">(</span><span class="n">cstr</span><span class="p">);</span>                           <span class="c1">// 很安全
+</span></code></pre>
+</div>
+
+<p><strong>尽量使用常量引用传递参数</strong>。</p>
+
+<h2 id="array_params">数组形参传递</h2>
+
+<p>数组不允许拷贝，所以无法使用值传递方式传递数组参数。</p>
+
+<p>以下三个函数声明都是等价的：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="n">print</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span><span class="o">*</span><span class="p">);</span>    <span class="c1">// 一般拉沙
+</span><span class="kt">void</span> <span class="n">print</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span><span class="p">[]);</span>   <span class="c1">// 使函数意图更加明显
+</span><span class="kt">void</span> <span class="n">print</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span><span class="p">[</span><span class="mi">10</span><span class="p">]);</span> <span class="c1">// 这里的维度表示期望传递的数组包含10个元素，实际不一定
+</span></code></pre>
+</div>
+
+<h3 id="protect_array_params">三种确保数组不越界的函数定义方法</h3>
+
+<h4 id="section-2">使用标记指定数组长度</h4>
+
+<p>数组自身包含一个结束符：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cp</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">cp</span><span class="p">)</span> <span class="k">while</span><span class="p">(</span><span class="o">*</span><span class="n">cp</span><span class="p">)</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">cp</span><span class="o">++</span><span class="p">;</span> <span class="c1">// 输出直到遇到空字符
+</span><span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="section-3">使用标准库规范</h4>
+
+<p>传递首元素和尾后元素指针：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">begin</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">end</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">while</span><span class="p">(</span><span class="n">begin</span> <span class="o">!=</span> <span class="n">end</span><span class="p">)</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">begin</span><span class="o">++</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]{</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">};</span>
+<span class="n">print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">begin</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">end</span><span class="p">(</span><span class="n">a</span><span class="p">));</span>
+</code></pre>
+</div>
+
+<h4 id="section-4">显式传递一个表示数组大小的形参</h4>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">ia</span><span class="p">[],</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">size</span><span class="p">;</span> <span class="o">++</span> <span class="n">i</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">ia</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="section-5">数组引用形参</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="kt">int</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">arr</span><span class="p">)[</span><span class="mi">10</span><span class="p">])</span>       <span class="c1">// arr 是具有10个整数的整形数组的引用
+</span><span class="p">{</span>
+    <span class="k">for</span><span class="p">(</span><span class="k">auto</span> <span class="n">elem</span> <span class="o">:</span> <span class="n">arr</span><span class="p">)</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">elem</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">[</span><span class="mi">2</span><span class="p">]{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+<span class="kt">int</span> <span class="n">k</span><span class="p">[</span><span class="mi">10</span><span class="p">]{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">9</span><span class="p">};</span>
+<span class="n">print</span><span class="p">(</span><span class="o">&amp;</span><span class="n">i</span><span class="p">);</span>                       <span class="c1">// 错误： 实参必须是含有10个整数的数组
+</span><span class="n">print</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>                        <span class="c1">// 错误
+</span><span class="n">print</span><span class="p">(</span><span class="n">k</span><span class="p">);</span>                        <span class="c1">// 正确
+</span></code></pre>
+</div>
+
+<h3 id="section-6">多维数组形参</h3>
+
+<p><strong>多维数组第一维大小会被忽略，第二维以及后面所有维度的大小都是数组类型的一部分，不能省略</strong>：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="n">print</span><span class="p">(</span><span class="kt">int</span> <span class="n">matrix</span><span class="p">[][</span><span class="mi">10</span><span class="p">],</span> <span class="kt">int</span> <span class="n">row_size</span><span class="p">){</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="section-7">复杂数组的识别方法</h3>
+
+<p>由内而外，由右向左。</p>
+
+<p>如<code class="highlighter-rouge">int *matrix[10]</code>，先看最右边<code class="highlighter-rouge">[10]</code>，表示含有10个元素的数组，再看<code class="highlighter-rouge">*</code>，表示元素是指针，所以<code class="highlighter-rouge">int *matrix[10]</code>表示一个包含10个int型指针的数组；</p>
+
+<p>再看<code class="highlighter-rouge">int (*matrix)[10]</code>，先看最里面<code class="highlighter-rouge">*</code>，表示matrix是个指针，再看最右面<code class="highlighter-rouge">[10]</code>，表示包含10个元素的数组，再看最左边<code class="highlighter-rouge">int</code>，表示元素是整型，所以<code class="highlighter-rouge">int (*matrix)[10]</code>表示一个指向包含10个int对象的数组的指针。</p>
+
+<h2 id="flexible_arguments">可变形参函数</h2>
+
+<p>C++11 新标准提出两种处理可变形参的方法：</p>
+
+<ul>
+  <li>若实参类型相同，则可以传递一个名为<code class="highlighter-rouge">initializer_list</code>的标准库类型；</li>
+  <li>若实参类型不同，则需要编写可变函数模板。</li>
+</ul>
+
+<p>这里只介绍<code class="highlighter-rouge">initializer_list</code>的使用：</p>
+
+<p><code class="highlighter-rouge">initializer_list</code>定于于头文件<code class="highlighter-rouge">&lt;initializer_list&gt;</code>中，包含<code class="highlighter-rouge">size()</code>,<code class="highlighter-rouge">begin()</code>,<code class="highlighter-rouge">end()</code>成员函数。</p>
+
+<p>其所包含元素永远是常量值，不能对其进行更改。</p>
+
+<p>如果要向<code class="highlighter-rouge">initializer_list</code>形参中传递一个值的序列，则必须把序列放在一对花括号内。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp"># include &lt;iostream&gt;
+# include &lt;initializer_list&gt;
+</span>
+<span class="kt">void</span> <span class="n">print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">);</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">print</span><span class="p">({</span> <span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span> <span class="p">});</span>
+    <span class="kt">int</span> <span class="n">a</span><span class="p">[</span><span class="mi">5</span><span class="p">]{</span> <span class="mi">24</span><span class="p">,</span><span class="mi">234</span><span class="p">,</span><span class="mi">455</span><span class="p">,</span><span class="mi">134</span><span class="p">,</span><span class="mi">441</span> <span class="p">};</span>
+    <span class="n">print</span><span class="p">({</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">4</span><span class="p">]});</span>
+    <span class="n">getchar</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="o">&amp;</span><span class="n">i</span> <span class="o">:</span> <span class="n">il</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>省略符形参是为了便于C++程序访问某些特殊的C代码而设置的，它仅仅用于 C 和 C++ 通用的类型。</p>
+
+<p><strong>大多数类类型的对象在传递给省略符形参时都无法正确拷贝。</strong></p>
+
+<h2 id="about_return_value">关于返回值</h2>
+
+<p>强行令void函数返回其他类型的表达式将产生编译错误。</p>
+
+<p><strong>不要返回局部变量的引用或者指针</strong>。</p>
+
+<p>除返回引用的函数能得到左值外，其它返回类型的函数都只能得到右值。</p>
+
+<p><strong>C++11 新标准规定，函数可以返回花括号包围的值的列表，这个列表用来对函数返回的临时量进行初始化。若列表为空，则对临时量执行值初始化。</strong></p>
+
+<p>值初始化：若元素类型为内置类型，则初始化为0；若为其它类类型，则元素由类进行默认初始化。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">process</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="mi">0</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>     <span class="k">return</span><span class="p">{};</span>
+    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">i</span><span class="p">)</span> <span class="k">return</span><span class="p">{</span> <span class="s">"i"</span><span class="p">,</span> <span class="s">"is"</span><span class="p">,</span> <span class="s">"bigger"</span> <span class="p">,</span><span class="s">"than"</span><span class="p">,</span> <span class="s">"0"</span> <span class="p">};</span>
+    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&gt;</span> <span class="n">i</span><span class="p">)</span> <span class="k">return</span><span class="p">{</span> <span class="s">"i"</span><span class="p">,</span> <span class="s">"is"</span><span class="p">,</span> <span class="s">"smaller"</span><span class="p">,</span><span class="s">"than"</span><span class="p">,</span> <span class="s">"0"</span> <span class="p">};</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>C++11 支持尾置返回类型：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">auto</span> <span class="n">func</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">int</span><span class="p">(</span><span class="o">*</span><span class="p">)[</span><span class="mi">10</span><span class="p">];</span>   <span class="c1">// 返回值是一个指向包含10个int元素的数组的指针
+</span></code></pre>
+</div>
+
+<h3 id="main-">main 函数的返回值</h3>
+
+<p>如果 main 函数运行到了结尾却没有return语句，那么编译器将隐式的插入一条<code class="highlighter-rouge">return 0;</code>。</p>
+
+<p>main 函数的返回值可以看做是状态指示器，返回0表示执行成功，非零值的具体含义视机器而定。</p>
+
+<p>为了使返回值与机器无关，<code class="highlighter-rouge">&lt;cstdlib&gt;</code>头文件定义了两个预处理变量<code class="highlighter-rouge">EXIT_SUCCESS</code>和<code class="highlighter-rouge">EXIT_FAILURE</code>，用于表示成功和失败。</p>
+
+<h2 id="overloaded_and_inline_function">关于重载函数、内联函数</h2>
+
+<h3 id="section-8">重载函数</h3>
+
+<p>函数重载： 如果同一作用域的几个函数<strong>名字相同但形参列表不同</strong>，则称他们为重载函数。</p>
+
+<p>main 函数不能重载。</p>
+
+<p>如果在内层作用域中声明了与外层作用域相同的函数名字，那么外层作用域中同名的全部函数将被隐藏。</p>
+
+<p>C++ 中，<strong>名字查找发生在类型检查之前</strong>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="n">read</span><span class="p">();</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">bool</span> <span class="n">read</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">read</span><span class="p">();</span>     <span class="c1">// 错误！read是一个布尔值，不是一个函数。
+</span>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="section-9">内联函数</h3>
+
+<p>一次函数调用包含一系列工作：</p>
+
+<ul>
+  <li>调用前要先保存寄存器，并在返回时恢复；</li>
+  <li>可能需要拷贝实参；</li>
+  <li>程序转向一个新的位置继续执行。</li>
+</ul>
+
+<p>内联函数可以避免函数调用的开销：调用内联函数的地方在编译过程中会被展开。</p>
+
+<p><strong>内联函数只用于规模较小、流程直接、调用频繁的函数。</strong></p>
+
+<h2 id="help_debug">调试帮助</h2>
+
+<p><code class="highlighter-rouge">assert(expr)</code>：如果<code class="highlighter-rouge">expr</code>为真，什么也不做；否则输出相关信息并终止程序的执行。</p>
+
+<p>头文件<code class="highlighter-rouge">&lt;cassert&gt;</code>，如果<strong>在包含头文件之前</strong>定义了<code class="highlighter-rouge">NDEBUG</code>宏，那么assert什么也不做。</p>
+
+<p>5个预处理器定义的、对于程序调试很有用的<code class="highlighter-rouge">const char</code>静态数组名：</p>
+
+<ul>
+  <li><code class="highlighter-rouge">__func__</code>: 当前函数名；</li>
+  <li><code class="highlighter-rouge">__FILE__</code>: 当前文件名；</li>
+  <li><code class="highlighter-rouge">__LINE__</code>: 当前行号；</li>
+  <li><code class="highlighter-rouge">__TIME__</code>: 文件编译时间；</li>
+  <li><code class="highlighter-rouge">__DATE__</code>: 文件编译日期。</li>
+</ul>
+
+<h2 id="function_ptr">函数指针</h2>
+
+<p><strong>当把函数名作为一个值使用时，该函数自动地转换成指针</strong>：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">bool</span> <span class="n">func</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span>
+<span class="n">bool</span> <span class="p">(</span><span class="o">*</span><span class="n">pf</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">)</span> <span class="o">=</span> <span class="n">func</span><span class="p">;</span>
+<span class="n">bool</span> <span class="p">(</span><span class="o">*</span><span class="n">pf</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">func</span><span class="p">;</span> <span class="c1">// 取地址符是可选的
+</span><span class="k">auto</span> <span class="n">pf</span> <span class="o">=</span> <span class="n">func</span><span class="p">;</span>               <span class="c1">// pf 是一个指针
+</span><span class="n">decltype</span><span class="p">(</span><span class="n">print</span><span class="p">)</span> <span class="n">pf</span><span class="p">;</span>           <span class="c1">// pf 是一个函数类型
+</span><span class="n">decltype</span><span class="p">(</span><span class="n">print</span><span class="p">)</span> <span class="o">*</span><span class="n">pf</span> <span class="o">=</span> <span class="n">func</span><span class="p">;</span>   <span class="c1">// pf 是一个指针
+</span></code></pre>
+</div>
+
+<p>可以直接使用指向函数的指针调用该函数：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">bool</span> <span class="n">b1</span> <span class="o">=</span> <span class="n">pf</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">bool</span> <span class="n">b2</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pf</span><span class="p">)(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span> <span class="c1">// 与上面等价
+</span></code></pre>
+</div>
+
+<p>当函数指针用作形参时，函数类型会被当做指针使用：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="n">example</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">bool</span> <span class="n">pf</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">));</span>
+<span class="kt">void</span> <span class="n">example</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">bool</span> <span class="p">(</span><span class="o">*</span><span class="n">pf</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">));</span> <span class="c1">// 与上面等价
+</span></code></pre>
+</div>
+
+<p>返回指向函数的指针：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">f1</span><span class="p">(</span><span class="kt">int</span><span class="p">))(</span><span class="kt">int</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span>          <span class="c1">// 由内向外，返回一个指向函数的指针
+</span><span class="k">auto</span> <span class="n">f1</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">int</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p><strong>decltype 作用于某个函数时，它返回函数类型而非指针</strong>。</p>
+
+<h2 id="class">类</h2>
+
+<p>定义在类内部的函数都是隐式内联的。</p>
+
+<p>编译器分两步处理类：<strong>首先编译成员声明，然后再到成员函数体</strong>。所以成员函数相互间使用时，不用在意成员出现的顺序。</p>
+
+<p>一个用关键字<code class="highlighter-rouge">mutable</code>声明的数据成员永远也不会是const，即使它是const对象的成员。</p>
+
+<h3 id="this_ptr">this 指针</h3>
+
+<p>每个类的成员函数都有一个名为this的隐式参数，它是一个常量指针，且指向当前对象。</p>
+
+<p>默认情况下，this的类型是<code class="highlighter-rouge">class_name *const</code>，即this指向非常量版本的类对象；若类对象是常量，那么该对象不能调用普通的成员函数。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp"># include &lt;iostream&gt;
+</span><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>            <span class="c1">// C++ 11
+</span>    <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>            <span class="c1">// C++ 11
+</span><span class="nl">public:</span>
+    <span class="kt">void</span> <span class="nf">print</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">a</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">b</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">const</span> <span class="n">TestClass</span> <span class="n">test</span><span class="p">;</span> <span class="c1">// 使用合成的默认构造函数
+</span>    <span class="n">test</span><span class="p">.</span><span class="n">print</span><span class="p">();</span>         <span class="c1">// 错误！const对象不能调用普通成员函数print！
+</span>    <span class="n">getchar</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>常量类对象只能调用常量成员函数</strong>。</p>
+
+<p>常量成员函数即在函数声明和定义的参数列表后加上const的普通成员函数，跟在参数列表后面的const表示this是一个指向常量的指针，所以常量成员函数不能改变调用它的对象的内容。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp"># include &lt;iostream&gt;
+</span><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>            <span class="c1">// C++ 11
+</span>    <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>            <span class="c1">// C++ 11
+</span><span class="nl">public:</span>
+    <span class="kt">void</span> <span class="n">print</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">const</span> <span class="n">TestClass</span> <span class="n">test</span><span class="p">;</span> <span class="c1">// 使用合成的默认构造函数
+</span>    <span class="n">test</span><span class="p">.</span><span class="n">print</span><span class="p">();</span>         <span class="c1">// OK
+</span>    <span class="n">TestClass</span> <span class="n">test2</span><span class="p">;</span>
+    <span class="n">test2</span><span class="p">.</span><span class="n">print</span><span class="p">();</span>        <span class="c1">// OK
+</span>    <span class="n">getchar</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">TestClass</span><span class="o">::</span><span class="n">print</span><span class="p">()</span> <span class="k">const</span>
+<span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">a</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">b</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="constructor">构造函数</h3>
+
+<p>构造函数初始化类对象的数据成员，只要类的对象被创建，就会执行构造函数。</p>
+
+<p><strong>建议每个类都显式的定义一个默认构造函数</strong>。</p>
+
+<h4 id="section-10">合成的默认构造函数</h4>
+
+<p><strong>如果类没有显式的定义构造函数，那么编译器就会为我们隐式的定义一个默认构造函数</strong>，即合成的默认构造函数。</p>
+
+<p>合成的默认构造函数按如下规则初始化类的数据成员：</p>
+
+<ul>
+  <li>如果存在类内的初始值，那么用它来初始化成员；</li>
+  <li>否则，<a href="#default_initialization">默认初始化</a>该成员。</li>
+</ul>
+
+<p>C++11 可以通过在参数列表后面写上<code class="highlighter-rouge">= default</code>来要求编译器生成构造函数。<code class="highlighter-rouge">= default</code>既可以和声明一起出现在类的内部，也可以作为定义出现在类的外部。</p>
+
+<ul>
+  <li>如果<code class="highlighter-rouge">= default</code>出现在类的内部，那么默认构造函数是内联的；</li>
+  <li>如果<code class="highlighter-rouge">= default</code>出现在类的外部，那么默认情况下不是内联的。</li>
+</ul>
+
+<h4 id="section-11">构造函数初始值列表</h4>
+
+<p>下面构造函数参数列表后的冒号以及冒号和花括号间的代码即为构造函数初始值列表:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// C++ 11
+</span>    <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="c1">// C++ 11
+</span><span class="nl">public:</span>
+    <span class="n">TestClass</span><span class="p">(</span><span class="kt">int</span> <span class="n">ia</span><span class="p">,</span> <span class="kt">int</span> <span class="n">ib</span><span class="p">)</span><span class="o">:</span> <span class="n">a</span><span class="p">(</span><span class="n">ia</span><span class="p">),</span><span class="n">b</span><span class="p">(</span><span class="n">ib</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>没有出现在构造函数初始值列表中的成员将通过相应的类内初始值（如果存在的话）初始化，或者<a href="#default_initialization">默认初始化</a>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// C++ 11
+</span>    <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="c1">// C++ 11
+</span><span class="nl">public:</span>
+    <span class="n">TestClass</span><span class="p">(</span><span class="kt">int</span> <span class="n">ia</span><span class="p">,</span> <span class="kt">int</span> <span class="n">ib</span><span class="p">)</span> 
+    <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">a</span> <span class="o">&lt;&lt;</span> <span class="s">","</span> <span class="o">&lt;&lt;</span> <span class="n">b</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>  <span class="c1">// 0, 2
+</span>        <span class="n">a</span> <span class="o">=</span> <span class="n">ia</span><span class="p">;</span> <span class="n">b</span> <span class="o">=</span> <span class="n">ib</span><span class="p">;</span>                           <span class="c1">// 赋值
+</span>    <span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p><strong>成员初始化顺序与它们在类定义中出现的顺序一致，所以不用太在意构造函数初始值列表初始值出现的顺序。</strong></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// C++ 11
+</span>    <span class="kt">int</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>  <span class="c1">// C++ 11
+</span><span class="nl">public:</span>
+    <span class="n">TestClass</span><span class="p">(</span><span class="kt">int</span> <span class="n">ia</span><span class="p">,</span> <span class="kt">int</span> <span class="n">ib</span><span class="p">)</span><span class="o">:</span> <span class="n">b</span><span class="p">(</span><span class="n">ib</span><span class="p">),</span><span class="n">a</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="p">{}</span>      <span class="c1">// 错误！a先被初始化！
+</span><span class="p">};</span>
+</code></pre>
+</div>
+
+<h4 id="section-12">委托构造函数</h4>
+
+<p>委托构造函数使用它所属类的其他构造函数执行它自己的初始化。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp"># include &lt;iostream&gt;
+</span><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">b</span><span class="p">;</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">TestClass</span><span class="p">(</span><span class="kt">int</span> <span class="n">ia</span><span class="p">,</span> <span class="kt">int</span> <span class="n">ib</span><span class="p">)</span> <span class="o">:</span> <span class="n">a</span><span class="p">(</span><span class="n">ia</span><span class="p">),</span> <span class="n">b</span><span class="p">(</span><span class="n">ib</span><span class="p">)</span> <span class="p">{</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">TestClass</span><span class="p">(</span><span class="kt">int</span> <span class="n">ia</span><span class="p">)</span> <span class="o">:</span><span class="n">TestClass</span><span class="p">(</span><span class="n">ia</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">TestClass</span><span class="p">()</span> <span class="o">:</span><span class="n">TestClass</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">TestClass</span> <span class="n">test</span><span class="p">;</span>                               <span class="c1">// print 2,1,0
+</span>    <span class="n">getchar</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="section-13">转换构造函数</h4>
+
+<p>当构造函数参数只接受一个实参时（有默认值，或真的只有一个参数），它实际上定义了转换为此类类型的隐式转换机制：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp"># include &lt;iostream&gt;
+</span><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">a</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">b</span><span class="p">;</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="n">TestClass</span><span class="p">(</span><span class="kt">int</span> <span class="n">ia</span><span class="p">,</span> <span class="kt">int</span> <span class="n">ib</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">:</span> <span class="n">a</span><span class="p">(</span><span class="n">ia</span><span class="p">),</span> <span class="n">b</span><span class="p">(</span><span class="n">ib</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">};</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">TestClass</span> <span class="n">test</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>                           <span class="c1">// 隐式转换
+</span>    <span class="n">getchar</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>使用关键字<code class="highlighter-rouge">explicit</code>可以阻止隐式类型转换。<code class="highlighter-rouge">explicit</code>只对一个实参的构造函数有效，且<code class="highlighter-rouge">explicit</code>只能出现在类内的声明处</strong>。</p>
+
+<h3 id="copy_assign_and_destructor">拷贝、赋值和析构</h3>
+
+<p><strong>如果不主动定义拷贝、赋值和析构操作的话，编译器将生成相应的版本对对象的每个成员执行拷贝、赋值和销毁操作</strong>。</p>
+
+<p>国内著名 C++ 博主陈硕曾经说过：<br />
+&gt; 知道禁用 copy-ctor/assign operator 是 C++ 程序员的试金石</p>
+
+<p>因为一般来说，对类对象做副本没有什么意义，所以如果<strong>确实不需要拷贝和赋值的话</strong>，需要限制编译器自动生成的拷贝构造函数和赋值构造函数。</p>
+
+<p>可以参照<a href="http://www.boost.org/doc/libs/1_63_0/boost/core/noncopyable.hpp">http://www.boost.org/doc/libs/1_63_0/boost/core/noncopyable.hpp</a>，对其进行派生，从而禁用拷贝和赋值操作。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">//  Boost noncopyable.hpp header file  --------------------------------------//
+</span>
+<span class="c1">//  (C) Copyright Beman Dawes 1999-2003. Distributed under the Boost
+//  Software License, Version 1.0. (See accompanying file
+//  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+</span>
+<span class="c1">//  See http://www.boost.org/libs/utility for documentation.
+</span>
+<span class="cp">#ifndef BOOST_CORE_NONCOPYABLE_HPP
+#define BOOST_CORE_NONCOPYABLE_HPP
+</span>
+<span class="cp">#include &lt;boost/config.hpp&gt;
+</span>
+<span class="k">namespace</span> <span class="n">boost</span> <span class="p">{</span>
+
+<span class="c1">//  Private copy constructor and copy assignment ensure classes derived from
+//  class noncopyable cannot be copied.
+</span>
+<span class="c1">//  Contributed by Dave Abrahams
+</span>
+<span class="k">namespace</span> <span class="n">noncopyable_</span>  <span class="c1">// protection from unintended ADL
+</span><span class="p">{</span>
+  <span class="k">class</span> <span class="nc">noncopyable</span>
+  <span class="p">{</span>
+  <span class="k">protected</span><span class="o">:</span>
+<span class="cp">#if !defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS) &amp;&amp; !defined(BOOST_NO_CXX11_NON_PUBLIC_DEFAULTED_FUNCTIONS)
+</span>      <span class="n">BOOST_CONSTEXPR</span> <span class="n">noncopyable</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+      <span class="o">~</span><span class="n">noncopyable</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+<span class="cp">#else
+</span>      <span class="n">noncopyable</span><span class="p">()</span> <span class="p">{}</span>
+      <span class="o">~</span><span class="n">noncopyable</span><span class="p">()</span> <span class="p">{}</span>
+<span class="cp">#endif
+#if !defined(BOOST_NO_CXX11_DELETED_FUNCTIONS)
+</span>      <span class="n">noncopyable</span><span class="p">(</span> <span class="k">const</span> <span class="n">noncopyable</span><span class="o">&amp;</span> <span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+      <span class="n">noncopyable</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span> <span class="k">const</span> <span class="n">noncopyable</span><span class="o">&amp;</span> <span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+<span class="cp">#else
+</span>  <span class="k">private</span><span class="o">:</span>  <span class="c1">// emphasize the following members are private
+</span>      <span class="n">noncopyable</span><span class="p">(</span> <span class="k">const</span> <span class="n">noncopyable</span><span class="o">&amp;</span> <span class="p">);</span>
+      <span class="n">noncopyable</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span> <span class="k">const</span> <span class="n">noncopyable</span><span class="o">&amp;</span> <span class="p">);</span>
+<span class="cp">#endif
+</span>  <span class="p">};</span>
+<span class="p">}</span>
+
+<span class="k">typedef</span> <span class="n">noncopyable_</span><span class="o">::</span><span class="n">noncopyable</span> <span class="n">noncopyable</span><span class="p">;</span>
+
+<span class="p">}</span> <span class="c1">// namespace boost
+</span>
+<span class="cp">#endif  // BOOST_CORE_NONCOPYABLE_HPP
+</span></code></pre>
+</div>
+
+<h3 id="access_control">访问控制符</h3>
+
+<p><code class="highlighter-rouge">public</code>, <code class="highlighter-rouge">protected</code>和<code class="highlighter-rouge">private</code>被称为访问说明符，用于说明接下来的成员访问级别，其有效范围直到出现下一个访问说明符或者到达类的结尾为止。</p>
+
+<p>一个类可以包含0个或多个访问说明符。</p>
+
+<p><code class="highlighter-rouge">class</code>和<code class="highlighter-rouge">struct</code>都可以定义一个类，唯一的区别是<code class="highlighter-rouge">struct</code>的默认访问权限是<code class="highlighter-rouge">public</code>，而<code class="highlighter-rouge">class</code>的是<code class="highlighter-rouge">private</code>。</p>
+
+<h3 id="static_class_members">类的静态成员</h3>
+
+<p><strong>类的静态成员存在于任何对象之外</strong>，对象中不包含任何与静态数据成员有关的数据。</p>
+
+<p><strong>静态成员函数也不与任何对象绑定在一起，它们不包含this指针，所以静态成员函数也不能设成const的</strong>。</p>
+
+<h4 id="section-14">定义静态成员</h4>
+
+<p><code class="highlighter-rouge">static</code>与<code class="highlighter-rouge">explicit</code>一样，只能出现在类内部的声明语句处。</p>
+
+<p>必须在类的外部定义和初始化每个静态成员。</p>
+
+<p>一个静态数据成员只能定义一次。</p>
+
+<p><strong>可以使用静态成员作为默认实参</strong>。</p>
+
+<h4 id="section-15">使用静态成员</h4>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp"># include &lt;iostream&gt;
+# include &lt;string&gt;
+</span><span class="k">class</span> <span class="nc">TestClass</span>
+<span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">c</span><span class="p">;</span>
+<span class="k">public</span><span class="o">:</span>
+    <span class="k">explicit</span> <span class="n">TestClass</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">s</span><span class="p">)</span> <span class="o">:</span> <span class="n">str</span><span class="p">(</span><span class="n">s</span><span class="p">),</span><span class="n">c</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="p">{}</span>
+    <span class="k">static</span> <span class="kt">void</span> <span class="n">print</span><span class="p">();</span>
+    <span class="k">static</span> <span class="kt">int</span> <span class="n">a</span><span class="p">;</span>
+    <span class="k">static</span> <span class="kt">int</span> <span class="n">b</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">TestClass</span> <span class="n">test</span><span class="p">(</span><span class="s">"hahah"</span><span class="p">);</span>
+    <span class="n">test</span><span class="p">.</span><span class="n">print</span><span class="p">();</span>
+    <span class="n">TestClass</span><span class="o">::</span><span class="n">print</span><span class="p">();</span>
+    <span class="n">TestClass</span><span class="o">::</span><span class="n">a</span> <span class="o">=</span> <span class="mi">41</span><span class="p">;</span>
+    <span class="n">getchar</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">TestClass</span><span class="o">::</span><span class="n">a</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">TestClass</span><span class="o">::</span><span class="n">b</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="n">TestClass</span><span class="o">::</span><span class="n">print</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">a</span> <span class="o">&lt;&lt;</span> <span class="s">","</span> <span class="o">&lt;&lt;</span> <span class="n">b</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+
+                <hr>
+
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2017/02/27/Markdown-basis-syntax/" data-toggle="tooltip" data-placement="top" title="Markdown 基础语法">
+                        Previous<br>
+                        <span>Markdown 基础语法</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2017/03/08/C++-basis-2/" data-toggle="tooltip" data-placement="top" title="C++ 释疑（二）">
+                        Next<br>
+                        <span>C++ 释疑（二）</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#Python" title="Python" rel="1">
+                                    Python
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Markdown" title="Markdown" rel="1">
+                                    Markdown
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++" title="C++" rel="9">
+                                    C++
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++ primer" title="C++ primer" rel="4">
+                                    C++ primer
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#thread" title="thread" rel="4">
+                                    thread
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Qt5" title="Qt5" rel="1">
+                                    Qt5
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#git" title="git" rel="1">
+                                    git
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#shell" title="shell" rel="1">
+                                    shell
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#algorithm" title="algorithm" rel="1">
+                                    algorithm
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="http://huangxuan.me">Hux Blog</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "blog-pengzhen";
+    var disqus_identifier = "/2017/03/01/C++-basis-1";
+    var disqus_url = "https://chorior.github.io/2017/03/01/C++-basis-1/";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                     
+                    <li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Chorior 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+<script src="/js/sw-registration.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-92626017-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+<!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0" /> -->
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

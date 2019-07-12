@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="天堂有路你不走,学海无涯苦坐舟">
+    <meta name="keywords"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>landslipzy's Blog</title>
+
+    <link rel="canonical" href="https://landslipzy.github.io/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <!--<link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">-->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">landslipzy's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __FishNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __FishNav__.close()
+        }else{
+            __FishNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close FishNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __FishNav__.close();
+    })
+</script>
+
+
+    <!-- Page Header -->
+<header class="intro-header" style="background-image: url('/img/home-bg.jpg')">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 ">
+                <div class="site-heading">
+                    <h1>landslip's Blog</h1>
+                    <!--<hr class="small">-->
+                    <span class="subheading">天堂有路你不走,学海无涯苦坐舟</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<div class="container">
+	<div class="row">
+        
+
+<!-- USE SIDEBAR -->
+    <!-- Post Container -->
+    		<div class="
+                col-lg-8 col-lg-offset-1
+                col-md-8 col-md-offset-1
+                col-sm-12
+                col-xs-12
+                post-container
+            ">
+    			
+<div class="post-preview">
+    <a href="/2019/06/26/common-data-structures-and-algorithms/">
+        <h2 class="post-title">
+            常用算法及其实现
+        </h2>
+        
+        <h3 class="post-subtitle">
+            algorithm
+        </h3>
+        
+        <div class="post-content-preview">
+            本文将总结面试中常考的数据结构、算法题，借鉴了《剑指 offer》、及 github 上 star 较多的算法仓库。
+
+本文结构
+
+
+  概述
+  数组
+  字符串
+  链表...
+        </div>
+    </a>
+    <p class="post-meta">
+        June 26, 2019
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2019/05/30/shell-common-skills/">
+        <h2 class="post-title">
+            Shell 常用技能
+        </h2>
+        
+        <h3 class="post-subtitle">
+            Hello Shell
+        </h3>
+        
+        <div class="post-content-preview">
+            本文是博主从业 Linux 一年的经验笔记，适用于有一定 Linux 基础的小白。
+
+本文结构
+
+
+  简介
+  Shell
+  Shell Script
+
+
+简介
+
+Linux 是大多数互联网...
+        </div>
+    </a>
+    <p class="post-meta">
+        May 30, 2019
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2019/02/16/git-work-flow/">
+        <h2 class="post-title">
+            Git 工作流
+        </h2>
+        
+        <h3 class="post-subtitle">
+            Hello Git
+        </h3>
+        
+        <div class="post-content-preview">
+            本文结构
+
+
+  版本管理
+  git 安装
+  git 配置
+  创建仓库
+  管理类型
+  基本流程
+  基本操作
+  分支操作
+  远程仓库
+  常用操作
+
+
+版本管理
+
+版本控制是一种记...
+        </div>
+    </a>
+    <p class="post-meta">
+        February 16, 2019
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/08/28/Qt5-basis/">
+        <h2 class="post-title">
+            Qt5 基础篇
+        </h2>
+        
+        <h3 class="post-subtitle">
+            Hello Qt5
+        </h3>
+        
+        <div class="post-content-preview">
+            本文将根据官方说明文档、一些 Qt 书籍、及一些个人经验来讲解 Qt 的基础知识，鉴于水平有限，可能会有些错误。
+
+这篇文章的目的主要是我个人使用。
+
+本文结构
+
+
+  Qt 概述
+  Hell...
+        </div>
+    </a>
+    <p class="post-meta">
+        August 28, 2017
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/07/06/C++-thread-application/">
+        <h2 class="post-title">
+            C++ 多线程应用篇
+        </h2>
+        
+        <h3 class="post-subtitle">
+            并发代码设计、管理及调试
+        </h3>
+        
+        <div class="post-content-preview">
+            本文知识来自C++ Concurrency In Action，介绍有关C++11多线程(multithreading)相关的代码设计、管理及调试的知识。
+
+本文结构
+
+
+  并发代码设计
+  ...
+        </div>
+    </a>
+    <p class="post-meta">
+        July 6, 2017
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/06/08/C++-thread-design-2/">
+        <h2 class="post-title">
+            C++ 多线程设计（二）
+        </h2>
+        
+        <h3 class="post-subtitle">
+            无锁并发数据结构设计
+        </h3>
+        
+        <div class="post-content-preview">
+            本文知识来自C++ Concurrency In Action，介绍无锁数据结构的设计。介于个人理解能力有限，本文并不保证所有内容都是正确的，建议对照原文进行理解。
+
+本文结构
+
+
+  无锁数据...
+        </div>
+    </a>
+    <p class="post-meta">
+        June 8, 2017
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/05/24/C++-thread-design-1/">
+        <h2 class="post-title">
+            C++ 多线程设计（一）
+        </h2>
+        
+        <h3 class="post-subtitle">
+            基于锁的并发数据结构设计
+        </h3>
+        
+        <div class="post-content-preview">
+            本篇内容从如何设计多线程数据结构开始，提供了一些设计规范，并实际操控了一些常用的数据结构(stack,queue,hash map,linked list)，它们的设计从简单到复杂，仿照它们从设...
+        </div>
+    </a>
+    <p class="post-meta">
+        May 24, 2017
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/04/24/C++-thread-basis/">
+        <h2 class="post-title">
+            C++ 多线程基础篇
+        </h2>
+        
+        <h3 class="post-subtitle">
+            Concurrency In Action
+        </h3>
+        
+        <div class="post-content-preview">
+            本文知识来自C++ Concurrency In Action，介绍有关C++11多线程(multithreading)相关的知识。
+
+本文结构
+
+
+  多线程概述
+    
+      基本概...
+        </div>
+    </a>
+    <p class="post-meta">
+        April 24, 2017
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/04/21/C++-basis-4/">
+        <h2 class="post-title">
+            C++ 释疑（四）
+        </h2>
+        
+        <h3 class="post-subtitle">
+            一些可能用不到的高级功能
+        </h3>
+        
+        <div class="post-content-preview">
+            本文是我重温《C++ Primer 5》第四部分高级主题时，摘录的一些要点，适合初级程序员食用。
+
+本文结构
+
+
+  tuple
+  正则表达式
+  bitset与随机数
+  异常处理
+  枚举...
+        </div>
+    </a>
+    <p class="post-meta">
+        April 21, 2017
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2017/04/04/C++-basis-3/">
+        <h2 class="post-title">
+            C++ 释疑（三）
+        </h2>
+        
+        <h3 class="post-subtitle">
+            拷贝控制、运算符重载与模板编程
+        </h3>
+        
+        <div class="post-content-preview">
+            本文是我重温《C++ Primer 5》第三部分类设计者的工具时，摘录的一些要点，适合初级程序员食用。
+
+本文结构
+
+
+  拷贝控制
+    
+      拷贝构造函数
+      拷贝赋值运算...
+        </div>
+    </a>
+    <p class="post-meta">
+        April 4, 2017
+    </p>
+</div>
+<hr>
+
+
+<!-- Pager -->
+
+<ul class="pager">
+    
+    
+    <li class="next">
+        <a href="/page2">Older Posts &rarr;</a>
+    </li>
+    
+</ul>
+
+
+    		</div>
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-3 col-lg-offset-0
+                col-md-3 col-md-offset-0
+                col-sm-12
+                col-xs-12
+                sidebar-container
+            ">
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                        
+                            
+                                <a href="/tags/#Python" title="Python" rel="1">
+                                    Python
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#Markdown" title="Markdown" rel="1">
+                                    Markdown
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#C++" title="C++" rel="9">
+                                    C++
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#C++ primer" title="C++ primer" rel="4">
+                                    C++ primer
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#thread" title="thread" rel="4">
+                                    thread
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#Qt5" title="Qt5" rel="1">
+                                    Qt5
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#git" title="git" rel="1">
+                                    git
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#shell" title="shell" rel="1">
+                                    shell
+                                </a>
+                            
+                        
+                            
+                                <a href="/tags/#algorithm" title="algorithm" rel="1">
+                                    algorithm
+                                </a>
+                            
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Short About -->
+                <section class="visible-md visible-lg">
+                    <hr><h5><a href="/about/">ABOUT ME</a></h5>
+                    <div class="short-about">
+                        
+                            <img src="/img/zhongying.jpg" />
+                        
+                        
+                            <p>精益求精</p>
+                        
+                        <!-- SNS Link -->
+                        <ul class="list-inline">
+                            
+                            <!--<li>
+                                <a href="/feed.xml">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fa fa-circle fa-stack-2x"></i>
+                                        <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>-->
+                            
+                            
+                            
+                            
+                            <!--<li>
+                                <a target="_blank" href="http://weibo.com/landslipzy">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fa fa-circle fa-stack-2x"></i>
+                                        <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>-->
+                            
+                            
+                            
+                            <li>
+                                <a target="_blank" href="https://github.com/landslipzy">
+                                    <span class="fa-stack fa-lg">
+                                        <i class="fa fa-circle fa-stack-2x"></i>
+                                        <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                    </span>
+                                </a>
+                            </li>
+                            
+                            
+                        </ul>
+                    </div>
+                </section>
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <!--<li><a href="http://huangxuan.me">Hux Blog</a></li>-->
+                    
+                </ul>
+                
+    		</div>
+        
+	</div>
+</div>
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                     
+                    <!--<li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>-->
+                    
+                    
+
+                    
+                    
+                    <!--<li>
+                        <a target="_blank" href="http://weibo.com/landslipzy">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>-->
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/landslipzy">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; landslipzy 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+<script src="/js/sw-registration.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-92626017-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+
+
+
+<!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0" /> -->
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

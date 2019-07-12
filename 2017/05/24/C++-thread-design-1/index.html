@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="学习使我快乐">
+    <meta name="keywords"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>C++ 多线程设计（一） - 彭侦的博客 | PengZhen's Blog</title>
+
+    <link rel="canonical" href="https://chorior.github.io/2017/05/24/C++-thread-design-1/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <!--<link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">-->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">PengZhen's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __FishNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __FishNav__.close()
+        }else{
+            __FishNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close FishNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __FishNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/stock-photo-5.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/stock-photo-5.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#C++" title="C++">C++</a>
+                        
+                        <a class="tag" href="/tags/#thread" title="thread">thread</a>
+                        
+                    </div>
+                    <h1>C++ 多线程设计（一）</h1>
+                    
+                    
+                    <h2 class="subheading">基于锁的并发数据结构设计</h2>
+                    
+                    <span class="meta">Posted by pengzhen on May 24, 2017</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>本篇内容从如何设计多线程数据结构开始，提供了一些设计规范，并实际操控了一些常用的数据结构(stack,queue,hash map,linked list)，它们的设计从简单到复杂，仿照它们从设计到完成的过程，你应该能够自行设计自己的并发数据结构，预测到可能发生的条件竞争并避免，并修改至最大可能的并发性能。</p>
+
+<h1 id="section">本文结构</h1>
+
+<ul>
+  <li><a href="#overview">基于锁的并发数据结构设计概述</a></li>
+  <li><a href="#simple_lock_based_concurrent_data_structures">基于锁的简单并发数据结构设计</a>
+    <ul>
+      <li><a href="#stack">stack</a></li>
+      <li><a href="#queue">queue</a></li>
+    </ul>
+  </li>
+  <li><a href="#complex_lock_based_concurrent_data_structures">基于锁的复杂并发数据结构设计</a>
+    <ul>
+      <li><a href="#lookup_table">lookup table</a></li>
+      <li><a href="#linked_list">linked list</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="overview">基于锁的并发数据结构设计概述</h2>
+
+<p>数据结构的选择是编程问题的重要组成部分，并发编程也不例外。如果一个数据结构被多个线程访问，这个数据结构要么是不可变的，要么需要设计程序用以确保改变在线程间是正确同步的。</p>
+
+<p><strong>并发设计的一条路是使用mutex，另一条路就是设计数据结构自身，用以支持并发访问，这样的数据结构被称为线程安全(thread safe)</strong>。</p>
+
+<p>使用mutex序列化了线程对数据的访问，要想获得真正的并发访问，你必须对数据结构的设计仔细斟酌。<strong>保护区域越少，被序列化的操作就越少，并发访问的潜力就越大</strong>。</p>
+
+<p>在设计数据结构时，你有两方面需要思考：</p>
+
+<ul>
+  <li><strong>确保访问是安全(safe)的</strong>：一个线程在修改数据时，不能被另一个线程看到中间状态；一个完整的操作不要分成几个操作写在不同的函数里；数据结构的异常处理；死锁(dead-lock)问题；等等；</li>
+  <li><strong>启动真正的并发</strong>：当前锁范围内的操作是否能移到锁范围外执行？该数据结构的不同部分能否使用不同的mutex来保护？是不是所有操作都需要相同层级的保护？有没有不改变操作语义又能提升并发概率的简单操作？等等。</li>
+</ul>
+
+<h2 id="simple_lock_based_concurrent_data_structures">基于锁的简单并发数据结构设计</h2>
+
+<p>基于锁的并发数据结构设计就是：<strong>确保在访问数据的时候lock了正确的mutex，并且lock的时长最短</strong>。</p>
+
+<p>你需要保证数据不能在保护区域外被访问，且接口(interface)间不能有条件竞争，如果有多个锁的话还要避免死锁的发生。</p>
+
+<h3 id="stack">stack</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个线程安全的简单stack模板
+</span><span class="cp">#include &lt;exception&gt;
+#include &lt;stack&gt;
+#include &lt;mutex&gt;
+</span>
+<span class="k">struct</span> <span class="n">empty_stack</span> <span class="o">:</span> <span class="n">std</span><span class="o">::</span><span class="n">exception</span>
+<span class="p">{</span>
+	<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">what</span><span class="p">()</span> <span class="k">const</span> <span class="k">throw</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="s">"empty stack.</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_stack</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">stack</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+	<span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">m</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">threadsafe_stack</span><span class="p">()</span> <span class="p">{}</span>
+
+	<span class="n">threadsafe_stack</span><span class="p">(</span><span class="k">const</span> <span class="n">threadsafe_stack</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">m</span><span class="p">);</span>
+		<span class="n">data</span> <span class="o">=</span> <span class="n">other</span><span class="p">.</span><span class="n">data</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">threadsafe_stack</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">threadsafe_stack</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="kt">void</span> <span class="nf">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+		<span class="n">data</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">));</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="k">throw</span> <span class="n">empty_stack</span><span class="p">();</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">res</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">top</span><span class="p">())));</span>
+		<span class="n">data</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="k">throw</span> <span class="n">empty_stack</span><span class="p">();</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">top</span><span class="p">());</span>
+		<span class="n">data</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">empty</span><span class="p">()</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">m</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">data</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;thread&gt;
+</span>
+<span class="cp">#include "myStack.h"
+</span>
+<span class="n">threadsafe_stack</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">g_stack</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">add_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">loop_count</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">g_stack</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="n">g_stack</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">try</span> <span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">g_stack</span><span class="p">.</span><span class="n">pop</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="k">catch</span><span class="p">(</span><span class="n">empty_stack</span> <span class="o">&amp;</span><span class="n">e</span><span class="p">){</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">();</span>
+			<span class="k">break</span><span class="p">;</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">auto</span> <span class="n">t1</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">add_data</span><span class="p">);</span>
+	<span class="k">auto</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">print_data</span><span class="p">);</span>
+
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>测试结果：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>9
+8
+7
+6
+5
+4
+3
+2
+1
+0
+empty stack.
+</code></pre>
+</div>
+
+<p>现在来分析上面的<code class="highlighter-rouge">threadsafe_stack</code>模板：</p>
+
+<ul>
+  <li>首先，每个成员函数在操作数据时，都对成员mutex进行了lock，这确保了一个时间只能有一个成员函数访问数据；</li>
+  <li>再来，将标准stack的top与pop放在一起是为了防止条件竞争(race condition)，具体原因可参考<a href="https://chorior.github.io/2017/04/24/C++-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%9F%BA%E7%A1%80%E7%AF%87/#api_design_with_mutex">基础篇</a>；</li>
+  <li>然后，对一个mutex进行lock时可能抛出一个异常，但这非常罕见，因为这是mutex出错或者系统资源缺失造成的，但是由于该操作是第一个操作，所以就算发生异常，数据也不会被更改，所以是安全的；<strong>对一个mutex进行unlock时永远不会失败</strong>；</li>
+  <li>接着，对<code class="highlighter-rouge">data.push(std::move(new_value))</code>的调用可能会抛出异常，如果value的拷贝或移动函数(当T没有移动构造函数时，std::move会调用拷贝构造函数)抛出异常，或者内存不足的话。不管哪种情况，标准stack保证是安全的；</li>
+  <li>继续，两个pop成员函数中的<code class="highlighter-rouge">std::make_shared</code>和<code class="highlighter-rouge">std::move</code>都可能抛出异常，但是就算抛出异常，也没有对数据进行更改，所以是安全的；</li>
+  <li>最后，也许你觉得对代码已经分析完了，然而并不是，这里还用三个潜在的使用上的问题：
+    <ul>
+      <li>如果你的模板参数T是自定义类型，并且自定义了赋值运算符=，那么在使用复制构造函数或pop成员函数时，就可能造成嵌套锁，继而造成死锁(dead-lock)，但是由于上锁的顺序是一定的，所以不太可能发生这个问题；</li>
+      <li>有两个不安全的成员函数：构造函数和析构函数。因为它们只能被调用一次。<strong>你不能在构造完成之前或析构结束之后访问其实例</strong>；</li>
+      <li>由于锁的原因，实际上一个时间点只有一个线程在使用这个stack工作；如果一个线程需要等待，那么它需要周期性的调用empty或pop抓取<code class="highlighter-rouge">empty_stack</code>异常，这消耗了不必要的资源用于检测数据，或者你必须写一些额外的等待代码(如condition variables)，但这又造成了不必要的中间锁，非常浪费。</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="queue">queue</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个线程安全的简单queue模板
+</span><span class="cp">#include &lt;queue&gt;
+#include &lt;mutex&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_queue</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">mut</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data_queue</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span> <span class="n">data_cond</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">threadsafe_queue</span><span class="p">()</span>
+	<span class="p">{}</span>
+
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">));</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">notify_one</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">wait_and_pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lk</span><span class="p">,</span> <span class="p">[</span><span class="k">this</span><span class="p">]</span> <span class="p">{</span><span class="k">return</span> <span class="o">!</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span> <span class="p">});</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">());</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">wait_and_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lk</span><span class="p">,</span> <span class="p">[</span><span class="k">this</span><span class="p">]</span> <span class="p">{</span><span class="k">return</span> <span class="o">!</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span> <span class="p">});</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">())));</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">try_pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span>
+			<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">());</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">try_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">())));</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">empty</span><span class="p">()</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;thread&gt;
+</span>
+<span class="cp">#include "myQueue.h"
+</span>
+<span class="n">threadsafe_queue</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">g_queue</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">add_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">loop_count</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">g_queue</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">g_queue</span><span class="p">.</span><span class="n">wait_and_pop</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">auto</span> <span class="n">t1</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">add_data</span><span class="p">);</span>
+	<span class="k">auto</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">print_data</span><span class="p">);</span>
+
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>测试结果(由于<code class="highlighter-rouge">print_data</code>线程永远不会自动结束，所以需要手动强制结束，应用篇里会学到线程中断的知识来解决这个问题)：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+^C
+</code></pre>
+</div>
+
+<p>现在来分析上面的<code class="highlighter-rouge">threadsafe_queue</code>模板：</p>
+
+<ul>
+  <li>该模板与上面的stack模板类似，唯一不同的就是使用了<code class="highlighter-rouge">std::condition_variable</code>，所以你再也不用周期性的调用empty来做等待操作了，也不用抓取<code class="highlighter-rouge">empty_stack</code>异常了；</li>
+  <li>当有多个线程在等待时，由于调用的是<code class="highlighter-rouge">notify_one()</code>，所以只会有一个线程被唤醒，然而当该线程发生异常时(如<code class="highlighter-rouge">std::make_shared</code>)，其它线程就不会被唤醒了，这里有三个方案来解决这个问题：
+    <ul>
+      <li>直接使用<code class="highlighter-rouge">notify_all()</code>；</li>
+      <li>当异常发生时，调用<code class="highlighter-rouge">notify_one()</code>尝试唤醒其它线程；</li>
+      <li>将<code class="highlighter-rouge">std::shared_ptr&lt;&gt;</code>的初始化移到push成员函数中去，并且标准queue改为存储<code class="highlighter-rouge">std::shared_ptr&lt;&gt;</code>而不是直接存储数据。下面的代码展示了第三个方案：</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个改善了的线程安全的简单queue模板
+</span><span class="cp">#include &lt;queue&gt;
+#include &lt;mutex&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_queue</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">mut</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">data_queue</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span> <span class="n">data_cond</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">threadsafe_queue</span><span class="p">()</span>
+	<span class="p">{}</span>
+
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="c1">// 内存分配往往是非常耗时的，
+</span>		<span class="c1">// 将其放置在lock之外，极大地缩短了持有mutex的时长
+</span>		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">)));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">notify_one</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">wait_and_pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lk</span><span class="p">,</span> <span class="p">[</span><span class="k">this</span><span class="p">]</span> <span class="p">{</span><span class="k">return</span> <span class="o">!</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span> <span class="p">});</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">());</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">try_pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span>
+			<span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">());</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">wait_and_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lk</span><span class="p">,</span> <span class="p">[</span><span class="k">this</span><span class="p">]</span> <span class="p">{</span><span class="k">return</span> <span class="o">!</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span> <span class="p">});</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">res</span> <span class="o">=</span> <span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">try_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">res</span> <span class="o">=</span> <span class="n">data_queue</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
+		<span class="n">data_queue</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">empty</span><span class="p">()</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">mut</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">data_queue</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<h4 id="a-thread-safe-queue-using-fine-grained-locks-and-condition-variables">A thread-safe queue using fine-grained locks and condition variables</h4>
+
+<p>上面的stack和queue只有一个需要保护的成员，因此只需要一个mutex。为了使用细粒度的锁，你需要观察queue的内部组成，并且关联一个mutex到每一个数据项。</p>
+
+<p>最简单的队列数据结构就是单链表了。</p>
+
+<p><img src="https://raw.githubusercontent.com/xiaoweiChen/Cpp_Concurrency_In_Action/master/images/chapter6/6-1.png" alt="singly linked list" /></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个简单的单线程队列实现
+</span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">queue</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">T</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">next</span><span class="p">;</span>
+		<span class="n">node</span><span class="p">(</span><span class="n">T</span> <span class="n">data_</span><span class="p">)</span> <span class="o">:</span>
+			<span class="n">data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data_</span><span class="p">))</span>
+		<span class="p">{}</span>
+	<span class="p">};</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">head</span><span class="p">;</span>
+	<span class="n">node</span><span class="o">*</span> <span class="n">tail</span><span class="p">;</span> <span class="c1">// 使用标准指针而非智能指针是因为unique_ptr只能独占
+</span>
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">queue</span><span class="p">()</span>
+	<span class="p">{}</span>
+
+	<span class="n">queue</span><span class="p">(</span><span class="k">const</span> <span class="n">queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">queue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">try_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">head</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+		<span class="p">}</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">res</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">)));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="p">);</span>
+		<span class="n">head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">p</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">)));</span>
+		<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_tail</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">tail</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">tail</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="k">else</span>
+		<span class="p">{</span>
+			<span class="n">head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="n">tail</span> <span class="o">=</span> <span class="n">new_tail</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>上面的实现对单线程来说，没什么问题。但是如果你要使用细粒度的锁来对应多线程的话，就会出现一系列可能导致你出错的事情。该队列有两个数据成员head和tail，原则上你可以使用两个mutex分别对其进行保护，但这会造成一系列问题：</p>
+
+<ul>
+  <li>最明显的问题是push函数既可以修改head，也可以修改tail，所以它不得不锁住两个mutex；</li>
+  <li>最严重的问题是当队列只有一个元素时，如果两个线程分别使用push和<code class="highlighter-rouge">try_pop</code>，由于此时<code class="highlighter-rouge">head.get() == tail</code>，所以<code class="highlighter-rouge">tail-&gt;next</code>和<code class="highlighter-rouge">head-&gt;next</code>指向的是同一个元素，所以需要同一个mutex进行保护，这还不如最开始的stack和queue呢。解决该问题的方法就是预先添加一个假的没有数据的node，这样就避免了这个问题：
+    <ul>
+      <li>对于一个空队列，head和tail指向同一个假的node而非原来的nullptr；</li>
+      <li>当你添加一个元素时，更新tail，然后使其指向下一个假元素，这样head和tail将永远指向不同的元素，因此就不会造成对<code class="highlighter-rouge">head-&gt;next</code>和<code class="highlighter-rouge">tail-&gt;next</code>的竞争了。</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个改善的简单的单线程队列实现
+</span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">queue</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">next</span><span class="p">;</span>
+	<span class="p">};</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">head</span><span class="p">;</span>
+	<span class="n">node</span><span class="o">*</span> <span class="n">tail</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">queue</span><span class="p">()</span> <span class="o">:</span>
+		<span class="n">head</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">),</span> <span class="n">tail</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">())</span>
+	<span class="p">{}</span>
+
+	<span class="n">queue</span><span class="p">(</span><span class="k">const</span> <span class="n">queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">queue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">try_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">==</span> <span class="n">tail</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+		<span class="p">}</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">res</span><span class="p">(</span><span class="n">head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="p">);</span>
+		<span class="n">head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">new_data</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">)));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">p</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">);</span>
+		<span class="n">tail</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_data</span><span class="p">;</span>
+		<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_tail</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+		<span class="n">tail</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+		<span class="n">tail</span> <span class="o">=</span> <span class="n">new_tail</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>现在push只访问tail了，<code class="highlighter-rouge">try_pop</code>虽然同时访问head和tail，但是tail只是被用作初始比较，因此只需要短暂的lock。最大的增益就是<code class="highlighter-rouge">try_pop</code>和push永远不会在同一个node上操作了，所以你可以大胆的使用一个mutex保护head，一个mutex保护tail。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个简单的使用细粒度锁的thread safe队列实现
+</span><span class="cp">#include &lt;mutex&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_queue</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">next</span><span class="p">;</span>
+	<span class="p">};</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">head_mutex</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">head</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">tail_mutex</span><span class="p">;</span>
+	<span class="n">node</span><span class="o">*</span> <span class="n">tail</span><span class="p">;</span>
+
+	<span class="n">node</span><span class="o">*</span> <span class="nf">get_tail</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">tail_lock</span><span class="p">(</span><span class="n">tail_mutex</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">tail</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">pop_head</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">head_mutex</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">==</span> <span class="n">get_tail</span><span class="p">())</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">nullptr</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="p">);</span>
+		<span class="n">head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">old_head</span><span class="p">;</span>
+	<span class="p">}</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">threadsafe_queue</span><span class="p">()</span> <span class="o">:</span>
+		<span class="n">head</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">),</span> <span class="n">tail</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">())</span>
+	<span class="p">{}</span>
+
+	<span class="n">threadsafe_queue</span><span class="p">(</span><span class="k">const</span> <span class="n">threadsafe_queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">threadsafe_queue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">threadsafe_queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">try_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">pop_head</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">old_head</span> <span class="o">?</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">:</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">new_data</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">)));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">p</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">);</span>
+		<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_tail</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">tail_lock</span><span class="p">(</span><span class="n">tail_mutex</span><span class="p">);</span>
+		<span class="n">tail</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_data</span><span class="p">;</span>
+		<span class="n">tail</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+		<span class="n">tail</span> <span class="o">=</span> <span class="n">new_tail</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>将<code class="highlighter-rouge">get_tail</code>放在<code class="highlighter-rouge">head_mutex</code>的lock范围内是为了保证得到的tail一定指向假元素，head也一定是当前的head。设想一种情况：将<code class="highlighter-rouge">get_tail</code>放置在<code class="highlighter-rouge">head_mutex</code>的lock范围外，如下所示：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">pop_head</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">old_tail</span> <span class="o">=</span> <span class="n">get_tail</span><span class="p">();</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">head_mutex</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">==</span> <span class="n">old_tail</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="n">nullptr</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="p">);</span>
+	<span class="n">head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+	<span class="k">return</span> <span class="n">old_head</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>当<code class="highlighter-rouge">get_tail</code>返回时，此时head可能已经发生了改变，在head和tail做比较时，也许tail已经被重新附了值，这样head不是你想要的head，tail也不是你想要的tail，就会造成跟预想结果不同的行为发生，将<code class="highlighter-rouge">get_tail</code>放在<code class="highlighter-rouge">head_mutex</code>的lock范围内就能完美的避免这种情况。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个较完整的使用细粒度锁的thread safe队列
+</span><span class="cp">#include &lt;condition_variable&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_queue</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">next</span><span class="p">;</span>
+	<span class="p">};</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">head</span><span class="p">;</span>	
+	<span class="n">node</span><span class="o">*</span> <span class="n">tail</span><span class="p">;</span>
+
+	<span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">head_mutex</span><span class="p">;</span>
+	<span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">tail_mutex</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span> <span class="n">data_cond</span><span class="p">;</span>
+
+	<span class="n">node</span><span class="o">*</span> <span class="nf">get_tail</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">tail_lock</span><span class="p">(</span><span class="n">tail_mutex</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">tail</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">pop_head</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="p">);</span>
+		<span class="n">head</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">old_head</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">wait_for_data</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">head_mutex</span><span class="p">);</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">head_lock</span><span class="p">,</span> <span class="p">[</span><span class="o">&amp;</span><span class="p">]</span> <span class="p">{</span><span class="k">return</span> <span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">!=</span> <span class="n">get_tail</span><span class="p">();</span> <span class="p">});</span>
+		<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head_lock</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">wait_pop_head</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">wait_for_data</span><span class="p">());</span>
+		<span class="k">return</span> <span class="n">pop_head</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">wait_pop_head</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">wait_for_data</span><span class="p">());</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">pop_head</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">try_pop_head</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">head_mutex</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">==</span> <span class="n">get_tail</span><span class="p">())</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span><span class="p">();</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="n">pop_head</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">try_pop_head</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">head_mutex</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">==</span> <span class="n">get_tail</span><span class="p">())</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span><span class="p">();</span>
+		<span class="p">}</span>
+		<span class="n">value</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">pop_head</span><span class="p">();</span>
+	<span class="p">}</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">threadsafe_queue</span><span class="p">()</span> <span class="o">:</span>
+		<span class="n">head</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">),</span> <span class="n">tail</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">())</span>
+	<span class="p">{}</span>
+
+	<span class="n">threadsafe_queue</span><span class="p">(</span><span class="k">const</span> <span class="n">threadsafe_queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">threadsafe_queue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">threadsafe_queue</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="kt">void</span> <span class="nf">push</span><span class="p">(</span><span class="n">T</span> <span class="n">new_value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">new_data</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_value</span><span class="p">)));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">p</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">);</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">tail_lock</span><span class="p">(</span><span class="n">tail_mutex</span><span class="p">);</span>
+			<span class="n">tail</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">=</span> <span class="n">new_data</span><span class="p">;</span>
+			<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_tail</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+			<span class="n">tail</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+			<span class="n">tail</span> <span class="o">=</span> <span class="n">new_tail</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="n">data_cond</span><span class="p">.</span><span class="n">notify_one</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">wait_and_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">wait_pop_head</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">wait_and_pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">wait_pop_head</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">try_pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">try_pop_head</span><span class="p">();</span>
+		<span class="k">return</span> <span class="n">old_head</span> <span class="o">?</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">:</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">try_pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="k">const</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">try_pop_head</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+		<span class="k">return</span> <span class="n">old_head</span> <span class="o">!=</span> <span class="n">nullptr</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">bool</span> <span class="n">empty</span><span class="p">()</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">head_lock</span><span class="p">(</span><span class="n">head_mutex</span><span class="p">);</span>
+		<span class="k">return</span> <span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="o">==</span> <span class="n">get_tail</span><span class="p">());</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<h2 id="complex_lock_based_concurrent_data_structures">基于锁的复杂并发数据结构设计</h2>
+
+<p>stack和queue非常简单，它们的接口相对固定，并且它们也应用于比较特殊的场合。大多数数据结构支持各种各样的操作，原则上这能<strong>增大并发的可能性，但是也增大了数据保护的难度</strong>。</p>
+
+<h3 id="lookup_table">lookup table</h3>
+
+<p>查找表(lookup table)就是键值对(key-value)的集合，在标准库中，如果键与值相等就是set，不等就是map。</p>
+
+<p>查询表的使用与栈和队列不同。栈和队列上，几乎每个操作都会对数据结构进行修改，不是添加一个元素，就是删除一个，而对于查询表来说，几乎不需要什么修改。和队列和栈一样，标准容器的接口不适合多线程进行并发访问，因为这些接口在设计的时候都存在固有的条件竞争，所以这些接口需要砍掉，以及重新修订。</p>
+
+<p>并发访问时，<code class="highlighter-rouge">std::map&lt;&gt;</code>接口最大的问题在于——迭代器。当你在处理一个迭代器时，也许其它线程已经删除了该迭代器指向的元素。关于迭代器的多线程设计可以放到后面，现在我们先来看一些查找表(lookup table)的基本操作：</p>
+
+<ul>
+  <li>添加一个键值对；</li>
+  <li>对于一个给定的键值，修改与其关联的值；</li>
+  <li>删除一个键值和其关联的值；</li>
+  <li>对于一个给定的键值，获取其关联的所有值；</li>
+  <li>是否为空。</li>
+</ul>
+
+<p>如果你坚持使用简单的线程安全规范的话，你也可以在每个成员函数中只使用一个mutex进行上锁保护，这样肯定是安全的。有一个潜在的问题是：当两个线程同时对一个单映射查找表(lookup table)添加相同的键值对时，只有先开始的线程会成功。一种办法就是将添加和修改放在同一个成员函数中去。</p>
+
+<p>当要查找的键值不存在时，可以添加一个默认值。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">mapped_type</span> <span class="n">get_value</span><span class="p">(</span><span class="n">key_type</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">mapped_type</span> <span class="n">default_value</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p>你也可以返回一个<code class="highlighter-rouge">std::pair&lt;mapped_type,bool&gt;</code>，其中bool值指示该键值是否存在；或者你也可以返回一个智能指针，当其为nullptr时，表示该键值不存在。</p>
+
+<p>一旦接口决定了，你就可以开始码代码了。使用单个mutex对每个成员函数上锁会浪费并发的可能性；一个选项是使用一个支持多线程读和单线程改的mutex，如<code class="highlighter-rouge">boost::shared_mutex</code>；但理想情况下，我们可以做得更好。</p>
+
+<p>要想得到细粒度的锁，你必须小心查看数据结构的实现细节，而不能直接包装已存在的容器，如<code class="highlighter-rouge">std::map&lt;&gt;</code>。这边有三个常见的方式来实现关联容器：</p>
+
+<ul>
+  <li>二叉树，如红黑树；</li>
+  <li>已排序数组；</li>
+  <li>哈希表。</li>
+</ul>
+
+<p>二叉树并不能提供太多扩展并发的机会，每个查找或修改都不得不从访问根节点开始，因此根节点需要被上锁；虽然这个锁在访问线程向树下移动时可以被释放，但并不比直接使用单个锁锁住整个数据结构好太多。</p>
+
+<p>已排序数组更差，因为你不能提前知晓一个给定的数据在该数组中的位置，所以你需要对整个数组上锁。</p>
+
+<p>剩下的就只有哈希表了。假设有一个固定数量的buckets(一个键值拥有一个bucket，其关联的所有值都放在该bucket中)，一个键值所属的bucket纯粹是该键值的一个属性及哈希函数(<strong>Assuming a fixed number of buckets, which bucket a key belongs to is purely a property of the key and its hash function</strong>)。这意味着你可以安全的对每个bucket使用不同的锁。如果你仍然使用类似<code class="highlighter-rouge">boost::shared_mutex</code>的mutex，你就能将并发的机会增加N倍，其中N是bucket的数量(显然原来只能有一个线程在写，现在可以有N个了)。缺点就是你需要为键值(key)设计一个好的哈希函数(对于一个给定值，任何时候调用此函数都应该返回相同的结果，对于不等的对象几乎总是产生不同的结果)，庆幸的是，C++标准库提供了<code class="highlighter-rouge">std::hash&lt;&gt;</code>模板，一些基本的类型如int，还有一些常用的标准库类型如<code class="highlighter-rouge">std::string</code>都提供了特例化，你可以直接拿来使用，对于自定义类型可以查看<a href="https://chorior.github.io/2017/04/04/C++-%E9%87%8A%E7%96%91-%E4%B8%89/#template_specialization">模板特例化</a>自行特例化。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个完成了基本功能的细粒度线程安全查找表
+</span><span class="cp">#include &lt;vector&gt;
+#include &lt;list&gt;
+#include &lt;mutex&gt;
+#include &lt;boost\thread\shared_mutex.hpp&gt;
+#include &lt;boost\thread\locks.hpp&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">Key</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Value</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Hash</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_lookup_table</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">class</span> <span class="nc">bucket</span><span class="n">_type</span>
+	<span class="p">{</span>
+	<span class="k">public</span><span class="o">:</span>
+		<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">bucket_value</span><span class="p">;</span>
+		<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">list</span><span class="o">&lt;</span><span class="n">bucket_value</span><span class="o">&gt;</span> <span class="n">bucket_data</span><span class="p">;</span>
+		<span class="k">typedef</span> <span class="k">typename</span> <span class="n">bucket_data</span><span class="o">::</span><span class="n">iterator</span> <span class="n">bucket_iterator</span><span class="p">;</span>
+
+		<span class="n">bucket_data</span> <span class="n">data</span><span class="p">;</span>
+		<span class="k">mutable</span> <span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span> <span class="n">mutex</span><span class="p">;</span>
+
+	<span class="k">private</span><span class="o">:</span>
+		<span class="n">bucket_iterator</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">find_if</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+				<span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">bucket_value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">item</span><span class="p">)</span>
+			<span class="p">{</span><span class="k">return</span> <span class="n">item</span><span class="p">.</span><span class="n">first</span> <span class="o">==</span> <span class="n">key</span><span class="p">;</span> <span class="p">});</span>
+		<span class="p">}</span>
+	
+	<span class="k">public</span><span class="o">:</span>
+		<span class="n">Value</span> <span class="n">value_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">default_value</span><span class="p">)</span> <span class="k">const</span>
+		<span class="p">{</span>
+			<span class="n">boost</span><span class="o">::</span><span class="n">shared_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+			<span class="n">bucket_iterator</span> <span class="k">const</span> <span class="n">found_entry</span> <span class="o">=</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+			<span class="k">return</span> <span class="p">(</span><span class="n">found_entry</span> <span class="o">==</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="o">?</span>
+				<span class="n">default_value</span> <span class="o">:</span> <span class="n">found_entry</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">;</span>
+		<span class="p">}</span>
+
+		<span class="kt">void</span> <span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+			<span class="n">bucket_iterator</span> <span class="k">const</span> <span class="n">found_entry</span> <span class="o">=</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">found_entry</span> <span class="o">==</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">())</span>
+			<span class="p">{</span>
+				<span class="n">data</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">bucket_value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">));</span>
+			<span class="p">}</span>
+			<span class="k">else</span>
+			<span class="p">{</span>
+				<span class="n">found_entry</span><span class="o">-&gt;</span><span class="n">second</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="kt">void</span> <span class="n">remove_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+			<span class="n">bucket_iterator</span> <span class="k">const</span> <span class="n">found_entry</span> <span class="o">=</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">found_entry</span> <span class="o">!=</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">())</span>
+			<span class="p">{</span>
+				<span class="n">data</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">found_entry</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">};</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">bucket_type</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">buckets</span><span class="p">;</span>
+	<span class="n">Hash</span> <span class="n">hasher</span><span class="p">;</span>
+
+	<span class="n">bucket_type</span><span class="o">&amp;</span> <span class="n">get_bucket</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="k">const</span> <span class="n">bucket_index</span> <span class="o">=</span> <span class="n">hasher</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">%</span> <span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+		<span class="k">return</span> <span class="o">*</span><span class="n">buckets</span><span class="p">[</span><span class="n">bucket_index</span><span class="p">];</span>
+	<span class="p">}</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="k">typedef</span> <span class="n">Key</span> <span class="n">key_type</span><span class="p">;</span>
+	<span class="k">typedef</span> <span class="n">Value</span> <span class="n">mapped_type</span><span class="p">;</span>
+	<span class="k">typedef</span> <span class="n">Hash</span> <span class="n">hash_type</span><span class="p">;</span>
+
+	<span class="n">threadsafe_lookup_table</span><span class="p">(</span><span class="kt">unsigned</span> <span class="n">num_buckets</span> <span class="o">=</span> <span class="mi">19</span><span class="p">,</span> <span class="n">Hash</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">hasher_</span> <span class="o">=</span> <span class="n">Hash</span><span class="p">())</span> <span class="o">:</span>
+		<span class="n">buckets</span><span class="p">(</span><span class="n">num_buckets</span><span class="p">),</span> <span class="n">hasher</span><span class="p">(</span><span class="n">hasher_</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">num_buckets</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">reset</span><span class="p">(</span><span class="k">new</span> <span class="n">bucket_type</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="n">threadsafe_lookup_table</span><span class="p">(</span><span class="n">threadsafe_lookup_table</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">threadsafe_lookup_table</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">threadsafe_lookup_table</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="n">Value</span> <span class="n">value_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">default_value</span> <span class="o">=</span> <span class="n">Value</span><span class="p">())</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="n">get_bucket</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="n">value_for</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default_value</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">get_bucket</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">remove_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">get_bucket</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="n">remove_mapping</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>上面的示例函数不多，仔细看个十分钟左右应该能够看懂。仔细看完，你会发现，该代码其实是相当简单的，但是每个关键的地方都做了适当的数据保护。其中bucket数量的默认值是19，这个值是随便写的，但是<strong>哈希表在拥有质数个buckets的时候工作的最好</strong>；因为bucket的数量是固定的，所以<code class="highlighter-rouge">get_bucket</code>可以在无锁的状态下被调用，然后再通过<code class="highlighter-rouge">bucket_type</code>的成员函数进行适当的数据保护。</p>
+
+<p>该示例是线程安全的，但是不是异常安全的呢？</p>
+
+<ul>
+  <li>首先，<code class="highlighter-rouge">value_for</code>并不修改数据，它抛不抛出异常无关紧要；</li>
+  <li><code class="highlighter-rouge">remove_mapping</code>调用了erase，但erase保证不会抛出异常，所以是安全的；</li>
+  <li>最后是<code class="highlighter-rouge">add_or_update_mapping</code>，它的两个if分支都可能抛出异常：
+    <ul>
+      <li><code class="highlighter-rouge">push_back</code>如果抛出异常会将list保持在原有状态，所以是安全的；</li>
+      <li>如果赋值运算符抛出异常，你可以祈祷它保持在原有状态，然而这不并影响整个数据结构，这完全是用户提供的类型的一个属性，你可以安全的留给用户来处理这件事。</li>
+    </ul>
+  </li>
+</ul>
+
+<p>在获取全部键值对快照的时候，需要锁住全部的buckets：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">get_map</span><span class="p">()</span> <span class="k">const</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">locks</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">locks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span><span class="p">(</span><span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">mutex</span><span class="p">));</span>
+	<span class="p">}</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+			<span class="n">it</span> <span class="o">!=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+			<span class="o">++</span><span class="n">it</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">res</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="o">*</span><span class="n">it</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;</span> <span class="n">get_Key</span><span class="p">()</span> <span class="k">const</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">locks</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">locks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span><span class="p">(</span><span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">mutex</span><span class="p">));</span>
+	<span class="p">}</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+			<span class="n">it</span> <span class="o">!=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+			<span class="o">++</span><span class="n">it</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">res</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">it</span><span class="o">-&gt;</span><span class="n">first</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>在测试编译时，<code class="highlighter-rouge">bucket_type</code>的<code class="highlighter-rouge">find_entry_for</code>一直提示不能将<code class="highlighter-rouge">const_iterator</code>转换成<code class="highlighter-rouge">iterator</code>，发现其是const限定的，所以data是const的，故而<code class="highlighter-rouge">data.begin()</code>、<code class="highlighter-rouge">data.end()</code>返回的都是<code class="highlighter-rouge">const_iterator</code>，而函数要求返回的是<code class="highlighter-rouge">iterator</code>，由于后面的<code class="highlighter-rouge">add_or_update_mapping</code>和<code class="highlighter-rouge">remove_mapping</code>也调用了该函数，并且修改了其指向的数据，所以不能直接将<code class="highlighter-rouge">bucket_iterator</code>改为<code class="highlighter-rouge">bucket_const_iterator</code>，解决方案是重载该函数，一个const限定返回<code class="highlighter-rouge">bucket_const_iterator</code>，一个没有const限定，返回<code class="highlighter-rouge">bucket_iterator</code>，如下所示：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个改善了的完成了基本功能的细粒度线程安全查找表
+</span><span class="cp">#include &lt;vector&gt;
+#include &lt;list&gt;
+#include &lt;mutex&gt;
+#include &lt;algorithm&gt;
+#include &lt;boost\thread\shared_mutex.hpp&gt;
+#include &lt;boost\thread\locks.hpp&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">Key</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Value</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Hash</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_lookup_table</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">class</span> <span class="nc">bucket</span><span class="n">_type</span>
+	<span class="p">{</span>
+		<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">bucket_value</span><span class="p">;</span>
+		<span class="k">typedef</span> <span class="n">std</span><span class="o">::</span><span class="n">list</span><span class="o">&lt;</span><span class="n">bucket_value</span><span class="o">&gt;</span> <span class="n">bucket_data</span><span class="p">;</span>
+		<span class="k">typedef</span> <span class="k">typename</span> <span class="n">bucket_data</span><span class="o">::</span><span class="n">iterator</span> <span class="n">bucket_iterator</span><span class="p">;</span>
+		<span class="k">typedef</span> <span class="k">typename</span> <span class="n">bucket_data</span><span class="o">::</span><span class="n">const_iterator</span> <span class="n">bucket_const_iterator</span><span class="p">;</span>
+
+		<span class="n">bucket_iterator</span> <span class="nf">find_entry_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">find_if</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+				<span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">bucket_value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">item</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="n">item</span><span class="p">.</span><span class="n">first</span> <span class="o">==</span> <span class="n">key</span><span class="p">;</span> <span class="p">});</span>
+		<span class="p">}</span>
+
+		<span class="n">bucket_const_iterator</span> <span class="nf">find_entry_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">find_if</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span>
+				<span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">bucket_value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">item</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="n">item</span><span class="p">.</span><span class="n">first</span> <span class="o">==</span> <span class="n">key</span><span class="p">;</span> <span class="p">});</span>
+		<span class="p">}</span>
+
+	<span class="k">public</span><span class="o">:</span>
+		<span class="n">bucket_data</span> <span class="n">data</span><span class="p">;</span>
+		<span class="k">mutable</span> <span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span> <span class="n">mutex</span><span class="p">;</span>
+
+		<span class="n">Value</span> <span class="n">value_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">default_value</span><span class="p">)</span> <span class="k">const</span>
+		<span class="p">{</span>
+			<span class="n">boost</span><span class="o">::</span><span class="n">shared_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+			<span class="n">bucket_const_iterator</span> <span class="n">found_entry</span> <span class="o">=</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+			<span class="k">return</span> <span class="p">(</span><span class="n">found_entry</span> <span class="o">==</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="o">?</span>
+				<span class="n">default_value</span> <span class="o">:</span> <span class="n">found_entry</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">;</span>
+		<span class="p">}</span>
+
+		<span class="kt">void</span> <span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+			<span class="n">bucket_iterator</span> <span class="k">const</span> <span class="n">found_entry</span> <span class="o">=</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">found_entry</span> <span class="o">==</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">())</span>
+			<span class="p">{</span>
+				<span class="n">data</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">bucket_value</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">));</span>
+			<span class="p">}</span>
+			<span class="k">else</span>
+			<span class="p">{</span>
+				<span class="n">found_entry</span><span class="o">-&gt;</span><span class="n">second</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="kt">void</span> <span class="n">remove_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+			<span class="n">bucket_iterator</span> <span class="k">const</span> <span class="n">found_entry</span> <span class="o">=</span> <span class="n">find_entry_for</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">found_entry</span> <span class="o">!=</span> <span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">())</span>
+			<span class="p">{</span>
+				<span class="n">data</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">found_entry</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">};</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">bucket_type</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">buckets</span><span class="p">;</span>
+	<span class="n">Hash</span> <span class="n">hasher</span><span class="p">;</span>
+
+	<span class="n">bucket_type</span><span class="o">&amp;</span> <span class="n">get_bucket</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="k">const</span> <span class="n">bucket_index</span> <span class="o">=</span> <span class="n">hasher</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">%</span> <span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+		<span class="k">return</span> <span class="o">*</span><span class="n">buckets</span><span class="p">[</span><span class="n">bucket_index</span><span class="p">];</span>
+	<span class="p">}</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="k">typedef</span> <span class="n">Key</span> <span class="n">key_type</span><span class="p">;</span>
+	<span class="k">typedef</span> <span class="n">Value</span> <span class="n">mapped_type</span><span class="p">;</span>
+	<span class="k">typedef</span> <span class="n">Hash</span> <span class="n">hash_type</span><span class="p">;</span>
+
+	<span class="n">threadsafe_lookup_table</span><span class="p">(</span><span class="kt">unsigned</span> <span class="n">num_buckets</span> <span class="o">=</span> <span class="mi">19</span><span class="p">,</span> <span class="n">Hash</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">hasher_</span> <span class="o">=</span> <span class="n">Hash</span><span class="p">())</span> <span class="o">:</span>
+		<span class="n">buckets</span><span class="p">(</span><span class="n">num_buckets</span><span class="p">),</span> <span class="n">hasher</span><span class="p">(</span><span class="n">hasher_</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">num_buckets</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">reset</span><span class="p">(</span><span class="k">new</span> <span class="n">bucket_type</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="n">threadsafe_lookup_table</span><span class="p">(</span><span class="n">threadsafe_lookup_table</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">threadsafe_lookup_table</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">threadsafe_lookup_table</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="n">Value</span> <span class="n">value_for</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">default_value</span> <span class="o">=</span> <span class="n">Value</span><span class="p">())</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="n">get_bucket</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="n">value_for</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default_value</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Value</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">get_bucket</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="n">remove_mapping</span><span class="p">(</span><span class="n">Key</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">get_bucket</span><span class="p">(</span><span class="n">key</span><span class="p">).</span><span class="n">remove_mapping</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">get_map</span><span class="p">()</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">locks</span><span class="p">;</span>
+		<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">locks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+				<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span><span class="p">(</span><span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">mutex</span><span class="p">));</span>
+		<span class="p">}</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">;</span>
+		<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+				<span class="n">it</span> <span class="o">!=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+				<span class="o">++</span><span class="n">it</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">res</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="o">*</span><span class="n">it</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;</span> <span class="n">get_Key</span><span class="p">()</span> <span class="k">const</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">locks</span><span class="p">;</span>
+		<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">locks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+				<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">boost</span><span class="o">::</span><span class="n">shared_mutex</span><span class="o">&gt;</span><span class="p">(</span><span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">mutex</span><span class="p">));</span>
+		<span class="p">}</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Key</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">;</span>
+		<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">buckets</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span>
+				<span class="n">it</span> <span class="o">!=</span> <span class="n">buckets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+				<span class="o">++</span><span class="n">it</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">res</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">it</span><span class="o">-&gt;</span><span class="n">first</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>测试代码如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;thread&gt;
+</span>
+<span class="cp">#include "myLookupTable.h"
+</span>
+<span class="n">threadsafe_lookup_table</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">g_lookup_table</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">add_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">loop_count</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">g_lookup_table</span><span class="p">.</span><span class="n">add_or_update_mapping</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">loop_count</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">g_lookup_table</span><span class="p">.</span><span class="n">value_for</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">auto</span> <span class="n">t1</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">add_data</span><span class="p">);</span>
+	<span class="k">auto</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">print_data</span><span class="p">);</span>
+
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">boost::thread</code>的库需要编译，步骤如下：</p>
+
+<ul>
+  <li>dos下进入到你下载的boost解压包文件夹，我的是<code class="highlighter-rouge">cd E:\boost_1_64_0\boost_1_64_0</code>；</li>
+  <li><code class="highlighter-rouge">cd tools\build</code>；</li>
+  <li><code class="highlighter-rouge">bootstrap.bat</code>；</li>
+  <li>复制生成的<code class="highlighter-rouge">bjam.exe</code>到<code class="highlighter-rouge">E:\boost_1_64_0\boost_1_64_0</code>下；</li>
+  <li><code class="highlighter-rouge">cd E:\boost_1_64_0\boost_1_64_0</code>；</li>
+  <li>根据你的vs版本(你可以先不添加库编译，vs会告诉你需要的库及你的vs版本号)，<code class="highlighter-rouge">bjam --toolset=msvc-14.1 --with-thread stage</code>；</li>
+  <li><code class="highlighter-rouge">bjam --toolset=msvc-14.1 --with-date_time stage</code>；</li>
+  <li>最后需要的lib在<code class="highlighter-rouge">E:\boost_1_64_0\boost_1_64_0\stage\lib</code>下；</li>
+  <li>在debug/x86模式下添加库输入<code class="highlighter-rouge">libboost_date_time-vc141-mt-gd-1_64.lib</code>和<code class="highlighter-rouge">libboost_thread-vc141-mt-gd-1_64.lib</code>即可。</li>
+</ul>
+
+<p>测试结果(测试程序可能需要修改，用于确保print发生在add之后)：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+</code></pre>
+</div>
+
+<h3 id="linked_list">linked list</h3>
+
+<p>支持STL类型迭代器的基本问题是：这个迭代器必须持有这个容器内部数据结构的一些类型的引用。如果该容器能被另外的线程修改，该引用又必须保持在可用状态，那么就需要这个迭代器持有该数据结构一些部分的锁了。</p>
+
+<p>让迭代器的生命周期完全脱离容器的控制是非常糟糕的，替代方案是使用像<code class="highlighter-rouge">for_each</code>一样的迭代函数来作为容器的一部分。这样就能让容器一直负责迭代和锁定，但是也违反了避免死锁的建议，因为为了让<code class="highlighter-rouge">for_each</code>做事，就必须调用在持有锁的情况下调用用户代码，这可能造成死锁；另外你还必须传递元素的引用到这个用户代码，这是非常危险的，因为用户代码可以将这个引用传递到外面，然后做什么事就脱离了掌控，继而可能造成条件竞争，你可以传递拷贝，但如果数据比较复杂，代价就会非常昂贵。但是你可以把这个问题交给用户，让他保证不会造成死锁，也不会存储引用，这是非常安全的，因为你知道他不会做一些淘气的事情。</p>
+
+<p>剩下的就是你需要为你的list提供哪些操作了。上面的hash map包含了以下五个操作：</p>
+
+<ul>
+  <li>添加一个元素；</li>
+  <li>移除一个元素；</li>
+  <li>查找一个元素；</li>
+  <li>更新一个元素；</li>
+  <li>拷贝每个元素到另一个容器。</li>
+</ul>
+
+<p>细粒度锁list的基本思想是：为每个node设置一个mutex，如果list太大，就会有好多好多mutex！这个方案的优点就是不同list部分的操作是真正并发的：每个操作持有它感兴趣的node的锁，然后离开时解锁。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#pragma once
+</span>
+<span class="c1">// 一个线程安全的细粒度锁链表的简单实现
+</span><span class="cp">#include &lt;mutex&gt;
+</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">threadsafe</span><span class="n">_list</span>
+<span class="p">{</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">m</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">next</span><span class="p">;</span>
+
+		<span class="n">node</span><span class="p">()</span> <span class="o">:</span>
+			<span class="n">next</span><span class="p">()</span>
+		<span class="p">{}</span>
+
+		<span class="n">node</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="o">:</span>
+			<span class="n">data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+		<span class="p">{}</span>
+	<span class="p">};</span>
+
+	<span class="n">node</span> <span class="n">head</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">threadsafe_list</span><span class="p">()</span>
+	<span class="p">{}</span>
+
+	<span class="o">~</span><span class="n">threadsafe_list</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">remove_if</span><span class="p">([](</span><span class="n">node</span> <span class="k">const</span><span class="o">&amp;</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nb">true</span><span class="p">;</span> <span class="p">});</span>
+	<span class="p">}</span>
+
+	<span class="n">threadsafe_list</span><span class="p">(</span><span class="n">threadsafe_list</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+	<span class="n">threadsafe_list</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">threadsafe_list</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+	<span class="kt">void</span> <span class="nf">push_front</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">new_node</span><span class="p">(</span><span class="k">new</span> <span class="n">node</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">m</span><span class="p">);</span>
+		<span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">next</span><span class="p">);</span>
+		<span class="n">head</span><span class="p">.</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">new_node</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">Function</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">for_each</span><span class="p">(</span><span class="n">Function</span> <span class="n">f</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">current</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">m</span><span class="p">);</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">next</span> <span class="o">=</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">.</span><span class="n">get</span><span class="p">())</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">next_lk</span><span class="p">(</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">m</span><span class="p">);</span>
+			<span class="n">lk</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+			<span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>
+			<span class="n">current</span> <span class="o">=</span> <span class="n">next</span><span class="p">;</span>
+			<span class="n">lk</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_lk</span><span class="p">);</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">Predicate</span><span class="o">&gt;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">find_first_if</span><span class="p">(</span><span class="n">Predicate</span> <span class="n">p</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">current</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">m</span><span class="p">);</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">next</span> <span class="o">=</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">.</span><span class="n">get</span><span class="p">())</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">next_lk</span><span class="p">(</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">m</span><span class="p">);</span>
+			<span class="n">lk</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="o">*</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">))</span>
+			<span class="p">{</span>
+				<span class="k">return</span> <span class="n">next</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span>
+			<span class="p">}</span>
+			<span class="n">current</span> <span class="o">=</span> <span class="n">next</span><span class="p">;</span>
+			<span class="n">lk</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_lk</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+	<span class="p">}</span>
+
+	<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">Predicate</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">remove_if</span><span class="p">(</span><span class="n">Predicate</span> <span class="n">p</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">current</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">head</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lk</span><span class="p">(</span><span class="n">head</span><span class="p">.</span><span class="n">m</span><span class="p">);</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">next</span> <span class="o">=</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">.</span><span class="n">get</span><span class="p">())</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">next_lk</span><span class="p">(</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">m</span><span class="p">);</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">p</span><span class="p">(</span><span class="o">*</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">))</span>
+			<span class="p">{</span>
+				<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+				<span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+				<span class="n">next_lk</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+			<span class="p">}</span>
+			<span class="k">else</span>
+			<span class="p">{</span>
+				<span class="n">lk</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+				<span class="n">current</span> <span class="o">=</span> <span class="n">next</span><span class="p">;</span>
+				<span class="n">lk</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_lk</span><span class="p">);</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>由于所有锁都是从head开始，按顺序进行lock的，所以不会有deadlock的危险；在<code class="highlighter-rouge">remove_if</code>函数中，如果删除的node正在被其他线程使用，就会造成条件竞争，但是由于该函数在删除的时候并没有unlock上一个node，所以正在删除的node是不可能被访问的；还是在<code class="highlighter-rouge">remove_if</code>函数中，下面的删除操作不能被替换为<code class="highlighter-rouge">current-&gt;next.reset(next-&gt;next.release())</code>，因为<code class="highlighter-rouge">next = current-&gt;next.get()</code>，如果先将<code class="highlighter-rouge">current-&gt;next</code>释放，那么next就是被删除的指针，继续使用会造成未定义行为，先将其转移到一个局部变量，然后将下一个node的指向赋给上一个<code class="highlighter-rouge">node.next</code>，最后该局部变量在生命周期结束时会自动释放。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">node</span><span class="o">&gt;</span> <span class="n">old_next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+<span class="n">current</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p>测试程序：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;thread&gt;
+</span>
+<span class="cp">#include "myLinkedList.h"
+</span>
+<span class="n">threadsafe_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">g_linked_lsit</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">add_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">loop_count</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">g_linked_lsit</span><span class="p">.</span><span class="n">push_front</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">g_linked_lsit</span><span class="p">.</span><span class="n">for_each</span><span class="p">(</span>
+		<span class="p">[](</span><span class="k">const</span> <span class="kt">int</span><span class="o">&amp;</span> <span class="n">i</span><span class="p">)</span> 
+	<span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">ends</span><span class="p">;</span> <span class="p">});</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">auto</span> <span class="n">t1</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">add_data</span><span class="p">);</span>
+	<span class="k">auto</span> <span class="n">t2</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="p">(</span><span class="n">print_data</span><span class="p">);</span>
+
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>测试结果：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>9 8 7 6 5 4 3 2 1 0
+</code></pre>
+</div>
+
+
+                <hr>
+
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2017/04/24/C++-thread-basis/" data-toggle="tooltip" data-placement="top" title="C++ 多线程基础篇">
+                        Previous<br>
+                        <span>C++ 多线程基础篇</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2017/06/08/C++-thread-design-2/" data-toggle="tooltip" data-placement="top" title="C++ 多线程设计（二）">
+                        Next<br>
+                        <span>C++ 多线程设计（二）</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#Python" title="Python" rel="1">
+                                    Python
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Markdown" title="Markdown" rel="1">
+                                    Markdown
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++" title="C++" rel="9">
+                                    C++
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++ primer" title="C++ primer" rel="4">
+                                    C++ primer
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#thread" title="thread" rel="4">
+                                    thread
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Qt5" title="Qt5" rel="1">
+                                    Qt5
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#git" title="git" rel="1">
+                                    git
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#shell" title="shell" rel="1">
+                                    shell
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#algorithm" title="algorithm" rel="1">
+                                    algorithm
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="http://huangxuan.me">Hux Blog</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "blog-pengzhen";
+    var disqus_identifier = "/2017/05/24/C++-thread-design-1";
+    var disqus_url = "https://chorior.github.io/2017/05/24/C++-thread-design-1/";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                     
+                    <li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Chorior 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+<script src="/js/sw-registration.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-92626017-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+<!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0" /> -->
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

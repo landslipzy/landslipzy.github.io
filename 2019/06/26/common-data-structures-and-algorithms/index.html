@@ -1,0 +1,3828 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="学习使我快乐">
+    <meta name="keywords"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>常用算法及其实现 - 彭侦的博客 | PengZhen's Blog</title>
+
+    <link rel="canonical" href="https://chorior.github.io/2019/06/26/common-data-structures-and-algorithms/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <!--<link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">-->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">PengZhen's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __FishNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __FishNav__.close()
+        }else{
+            __FishNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close FishNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __FishNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/stock-photo-11.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/stock-photo-11.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#algorithm" title="algorithm">algorithm</a>
+                        
+                    </div>
+                    <h1>常用算法及其实现</h1>
+                    
+                    
+                    <h2 class="subheading">algorithm</h2>
+                    
+                    <span class="meta">Posted by pengzhen on June 26, 2019</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>本文将总结面试中常考的数据结构、算法题，借鉴了《剑指 offer》、《算法导论公开课》、及 github 上 star 较多的算法仓库。</p>
+
+<h2 id="section">本文结构</h2>
+
+<ul>
+  <li><a href="#overview">概述</a></li>
+  <li><a href="#array">数组</a></li>
+  <li><a href="#string">字符串</a></li>
+  <li><a href="#list">链表</a></li>
+  <li><a href="#hash_table">哈希表</a></li>
+  <li><a href="#tree">树</a></li>
+  <li><a href="#dynamic_table">动态表</a></li>
+  <li><a href="#skip_table">跳跃表</a></li>
+  <li><a href="#stl">标准容器</a></li>
+  <li><a href="#search_algorithm">查找</a></li>
+  <li><a href="#divide_and_conquer">分治法</a></li>
+  <li><a href="#dynamic_program">动态规划</a></li>
+  <li><a href="#greedy_algorithm">贪婪算法</a></li>
+  <li><a href="#others">其它</a></li>
+</ul>
+
+<h2 id="overview">概述</h2>
+
+<p>不管你是刚毕业的小白还是工作三五年的老狗，数据结构和算法一般都是面试的重要关注点，老狗还需要关注专业技能和项目经验，这也是面试官考察的重点。</p>
+
+<p>常用数据结构及算法列表如下：</p>
+
+<ol>
+  <li>数组、字符串、链表（插入、删除）、栈、队列、哈希表、树（遍历、递归）、动态表、跳跃表、C++/java 容器特性及其底层实现；</li>
+  <li>查找、排序（二分、归并、快排）、</li>
+  <li>分治法、动态规划、贪婪算法；</li>
+  <li>在正确的算法实现下，还要注意算法的鲁棒性（稳定性），关注特殊情况、特殊输入、边界条件等，不能让算法随意崩溃，有时候面试官就考这个。</li>
+</ol>
+
+<p>本文所有示例均在 windows7 visual studio 2015 上进行过实验，其他环境如有报错请自行修改。</p>
+
+<h2 id="array">数组</h2>
+
+<p>数组是最简单的数据结构之一，它占据一块连续的内存并按照顺序存储数据。<strong>创建数组前需要先指定其容量大小</strong>，由于代码里一般都是指定最大需要的容量大小，所以其空间不能被有效利用。</p>
+
+<p>C++ 里一般使用 vector 来代替数组，其内存也是连续的，也能按照下标随机读写，其内部扩张策略是<strong>动态表，即当容量不够时，重新分配一个当前容量的两倍的空间</strong>，然后将旧数据复制到新空间中，如果其数据是类实例，那么会调用复制构造函数。vector 有专门的函数可以控制容量的大小（<code class="highlighter-rouge">shrink_to_fit</code>）。</p>
+
+<p>数组的考察方式很简单，一般是求 sizeof 及 数组指针的特性（增减）等，推荐在牛客上练习相应的题目。</p>
+
+<h2 id="string">字符串</h2>
+
+<p>字符串也是连续存储的，C/C++ 中每个字符串都是以字符 ‘\0’ 结尾，这个特性也是经常与数组结合起来考察 sizeof。</p>
+
+<p>掌握 C 里面字符串的常用函数：printf,sprintf,strcpy,strcat,strcmp,memcpy,memmove 及其安全函数；</p>
+
+<p>熟悉 C++ 里面 string 的添加(append)、查找(find) 函数。</p>
+
+<p>字符串的考察方式很多，大多都是与算法结合一起考。</p>
+
+<h2 id="list">链表</h2>
+
+<p>链表是面试最为频繁的数据结构，链表在任意位置插入、删除都很快，但是其读写不太方便。</p>
+
+<p>链表的考察方式一般是现场编写插入、删除、反转链表代码：</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+typedef struct ListNode
+{
+	int m_nValue;
+	struct ListNode* m_pNext;
+}ListNode;
+
+void PrintList(const ListNode* pHead);
+void AddToTail(ListNode** pHead, int value);
+void RemoveNode(ListNode** pHead, int value);
+void ReverseList(ListNode** pHead);
+
+int main(void)
+{
+	ListNode* list = NULL;
+
+	// 随机生成链表项
+	srand((unsigned)time(NULL));
+	for (int i = 0; i &lt; 10; ++i)
+	{
+		AddToTail(&amp;list, rand() % 10);
+	}
+	PrintList(list);
+
+	// 删除链表项
+	for (int i = 0; i &lt; 5; ++i)
+	{
+		RemoveNode(&amp;list, i);
+	}
+	PrintList(list);
+
+	// 反转链表
+	ReverseList(&amp;list);
+	PrintList(list);
+
+	return 0;
+}
+
+void PrintList(const ListNode* pHead)
+{
+	while (pHead)
+	{
+		printf(" %d", pHead-&gt;m_nValue);
+		pHead = pHead-&gt;m_pNext;
+	}
+	printf("\n");
+}
+
+void AddToTail(ListNode** pHead, int value)
+{
+	if (NULL == pHead)
+	{
+		return;
+	}
+
+	ListNode* tmp = (ListNode*)malloc(sizeof(ListNode));
+	if (NULL == tmp)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	tmp-&gt;m_nValue = value;
+	tmp-&gt;m_pNext = NULL;
+
+	if (NULL == *pHead)
+	{
+		*pHead = tmp;
+		return;
+	}
+
+	ListNode* pTail = *pHead;
+	while (pTail-&gt;m_pNext)
+	{
+		pTail = pTail-&gt;m_pNext;
+	}
+	pTail-&gt;m_pNext = tmp;
+}
+
+void RemoveNode(ListNode** pHead, int value)
+{
+	if (NULL == pHead || NULL == *pHead)
+	{
+		return;
+	}
+
+	ListNode* pre = NULL;
+	ListNode* curr = *pHead;
+	while (curr)
+	{
+		if (curr-&gt;m_nValue == value)
+		{
+			if (NULL == pre)
+			{
+				*pHead = curr-&gt;m_pNext;
+				free(curr);
+				curr = *pHead;
+			}
+			else
+			{
+				pre-&gt;m_pNext = curr-&gt;m_pNext;
+				free(curr);
+				curr = pre-&gt;m_pNext;
+			}
+		}
+		else
+		{
+			pre = curr;
+			curr = curr-&gt;m_pNext;
+		}
+	}
+}
+
+void ReverseList(ListNode** pHead)
+{
+	if (NULL == pHead || NULL == *pHead)
+	{
+		return;
+	}
+
+	ListNode* pre = NULL;
+	ListNode* curr = *pHead;
+	ListNode* next = NULL;
+	while (curr)
+	{
+		next = curr-&gt;m_pNext;
+		if (NULL == next)
+		{
+			*pHead = curr;
+		}
+
+		curr-&gt;m_pNext = pre;
+		pre = curr;
+		curr = next;
+	}
+}
+</code></pre>
+
+<h2 id="hash_table">哈希表</h2>
+
+<p>哈希表最大的好处是查找方便，可以使用数组实现最简单的哈希表。</p>
+
+<p>当键的哈希值重复时，有两种常用策略来避免冲突，一种是以链表的形式链接起来，另一种就是递归哈希（该算法在算法导论中做过证明，再次冲突的概率很小），工程中一般使用链表来解决冲突。</p>
+
+<p>哈希表的考察方式很多，大多是与算法结合一起考，如查找数组中和为某个数字的两个或多个数；也有直接让写哈希表的：</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+typedef struct ListNode
+{
+	int m_nValue;
+	struct ListNode* m_pNext;
+}ListNode;
+
+void PrintList(const ListNode* pHead);
+void AddToTail(ListNode** pHead, int value);
+void RemoveNode(ListNode** pHead, int value);
+void ReverseList(ListNode** pHead);
+void DeleteList(ListNode** pHead);
+
+typedef struct Hashmap
+{
+	ListNode** m_ppListNode;
+	size_t m_uSize;
+}Hashmap;
+
+void CreateHashmap(Hashmap** ppHashmap, const unsigned size);
+void DeleteHashmap(Hashmap** ppHashmap);
+size_t GenHash(const size_t key, const size_t size);
+void AddToHashmap(Hashmap* pHashmap, const int key, const int value);
+void RemoveFromHashmap(Hashmap* pHashmap, const int key, const int value);
+void PrintHashmap(const Hashmap* pHashmap);
+
+int main(void)
+{
+	// 创建哈希表
+	Hashmap* pHashmap = NULL;
+	CreateHashmap(&amp;pHashmap, 5);
+
+	// 随机生成键值相同的键值对，并添加到哈希表中
+	int tmp = 0;
+	srand((unsigned)time(NULL));
+	for (int i = 0; i &lt; 20; ++i)
+	{
+		tmp = rand() % 20;
+		AddToHashmap(pHashmap, tmp, tmp);
+	}
+	PrintHashmap(pHashmap);
+
+	// 删除哈希项
+	for (int i = 0; i &lt; 5; ++i)
+	{
+		RemoveFromHashmap(pHashmap, i, i);
+	}
+	PrintHashmap(pHashmap);
+
+	// 删除哈希表
+	DeleteHashmap(&amp;pHashmap);
+
+	return 0;
+}
+
+void PrintList(const ListNode* pHead)
+{
+	while (pHead)
+	{
+		printf(" %d", pHead-&gt;m_nValue);
+		pHead = pHead-&gt;m_pNext;
+	}
+	printf("\n");
+}
+
+void AddToTail(ListNode** pHead, int value)
+{
+	if (NULL == pHead)
+	{
+		return;
+	}
+
+	ListNode* tmp = (ListNode*)malloc(sizeof(ListNode));
+	if (NULL == tmp)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	tmp-&gt;m_nValue = value;
+	tmp-&gt;m_pNext = NULL;
+
+	if (NULL == *pHead)
+	{
+		*pHead = tmp;
+		return;
+	}
+
+	ListNode* pTail = *pHead;
+	while (pTail-&gt;m_pNext)
+	{
+		pTail = pTail-&gt;m_pNext;
+	}
+	pTail-&gt;m_pNext = tmp;
+}
+
+void RemoveNode(ListNode** pHead, int value)
+{
+	if (NULL == pHead || NULL == *pHead)
+	{
+		return;
+	}
+
+	ListNode* pre = NULL;
+	ListNode* curr = *pHead;
+	while (curr)
+	{
+		if (curr-&gt;m_nValue == value)
+		{
+			if (NULL == pre)
+			{
+				*pHead = curr-&gt;m_pNext;
+				free(curr);
+				curr = *pHead;
+			}
+			else
+			{
+				pre-&gt;m_pNext = curr-&gt;m_pNext;
+				free(curr);
+				curr = pre-&gt;m_pNext;
+			}
+		}
+		else
+		{
+			pre = curr;
+			curr = curr-&gt;m_pNext;
+		}
+	}
+}
+
+void ReverseList(ListNode** pHead)
+{
+	if (NULL == pHead || NULL == *pHead)
+	{
+		return;
+	}
+
+	ListNode* pre = NULL;
+	ListNode* curr = *pHead;
+	ListNode* next = NULL;
+	while (curr)
+	{
+		next = curr-&gt;m_pNext;
+		if (NULL == next)
+		{
+			*pHead = curr;
+		}
+
+		curr-&gt;m_pNext = pre;
+		pre = curr;
+		curr = next;
+	}
+}
+
+void DeleteList(ListNode** pHead)
+{
+	if (NULL == pHead || NULL == *pHead)
+	{
+		return;
+	}
+
+	ListNode* curr = *pHead;
+	ListNode* next = NULL;
+	while (curr)
+	{
+		next = curr-&gt;m_pNext;
+		free(curr);
+		curr = next;
+	}
+	*pHead = NULL;
+}
+
+void CreateHashmap(Hashmap** ppHashmap, const unsigned size)
+{
+	if (NULL == ppHashmap || 0 == size)
+	{
+		return;
+	}
+
+	Hashmap* pHashmap = (Hashmap*)malloc(sizeof(Hashmap));
+	if (NULL == pHashmap)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	ListNode** ppListNode = (ListNode**)malloc(size * sizeof(ListNode*));
+	if (NULL == ppListNode)
+	{
+		printf("malloc error\n");
+		free(pHashmap);
+		return;
+	}
+
+	for (size_t i = 0; i &lt; size; ++i)
+	{
+		ppListNode[i] = NULL;
+	}
+
+	pHashmap-&gt;m_ppListNode = ppListNode;
+	pHashmap-&gt;m_uSize = size;
+	*ppHashmap = pHashmap;
+}
+
+void DeleteHashmap(Hashmap** ppHashmap)
+{
+	if (NULL == ppHashmap || NULL == *ppHashmap)
+	{
+		return;
+	}
+
+	Hashmap* pHashmap = *ppHashmap;
+	if (NULL == pHashmap-&gt;m_ppListNode)
+	{
+		free(pHashmap);
+		*ppHashmap = NULL;
+		return;
+	}
+
+	ListNode** ppListNode = pHashmap-&gt;m_ppListNode;
+	for (size_t i = 0; i &lt; pHashmap-&gt;m_uSize; ++i)
+	{
+		DeleteList(ppListNode + i);
+	}
+
+	free(pHashmap);
+	*ppHashmap = NULL;
+}
+
+size_t GenHash(const size_t key, const size_t size)
+{
+	return key%size;
+}
+
+void AddToHashmap(Hashmap* pHashmap, const int key, const int value)
+{
+	if (NULL == pHashmap || 0 == pHashmap-&gt;m_uSize)
+	{
+		return;
+	}
+
+	size_t index = GenHash(key, pHashmap-&gt;m_uSize);
+	AddToTail(pHashmap-&gt;m_ppListNode + index, value);
+}
+
+void RemoveFromHashmap(Hashmap* pHashmap, const int key, const int value)
+{
+	if (NULL == pHashmap || 0 == pHashmap-&gt;m_uSize)
+	{
+		return;
+	}
+
+	size_t index = GenHash(key, pHashmap-&gt;m_uSize);
+	RemoveNode(pHashmap-&gt;m_ppListNode + index, value);
+}
+
+void PrintHashmap(const Hashmap* pHashmap)
+{
+	if (NULL == pHashmap || NULL == pHashmap-&gt;m_ppListNode)
+	{
+		return;
+	}
+
+	for (size_t i = 0; i &lt; pHashmap-&gt;m_uSize; ++i)
+	{
+		printf("%d:", i);
+		PrintList((pHashmap-&gt;m_ppListNode)[i]);
+	}
+}
+</code></pre>
+
+<h2 id="tree">树</h2>
+
+<p>树是一种在实际编程中经常遇到的数据结构，它的逻辑很简单：</p>
+
+<ol>
+  <li>除了根节点外每个节点只有一个父节点，根节点没有父节点；</li>
+  <li>除了叶节点之外，所有节点都有一个或多个子节点，叶节点没有子节点；</li>
+  <li>父节点和子节点之间用指针链接。</li>
+</ol>
+
+<p>有关树的考察方式一般有两种：</p>
+
+<ol>
+  <li>某种树的特性，熟悉<a href="https://www.cnblogs.com/maybe2030/p/4732377.html">各种树</a>；</li>
+  <li>树的遍历–前序遍历（根左右）、中序遍历（左根右）、后序遍历（左右根）、层级遍历
+    <ol>
+      <li>编程实现树的各种遍历；</li>
+      <li>前中后缀表达式转换–波兰表达式实现。</li>
+    </ol>
+  </li>
+</ol>
+
+<p>下面实现二叉搜索树的插入、移除、删除、查找、获取树的高度、前中后序遍历、层级遍历：</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+#include &lt;math.h&gt;
+
+#define MAX_NUM 11
+
+typedef struct BSTree
+{
+	int m_nValue;
+	int m_nCount; // 记录添加m_nValue的次数
+	struct BSTree* m_pLeft;
+	struct BSTree* m_pRight;
+}BSTree;
+
+void AddToBSTree(BSTree** ppBSTree, const int value);
+void RemoveFromBSTree(BSTree** ppBSTree, const int value);
+void DeleteBSTree(BSTree** ppBSTree);
+const BSTree* SearchBSTree(const BSTree* pBSTree, const int value);
+int GetHeight(const BSTree* pBSTree);
+
+// 递归实现
+void PreOrderPrint(const BSTree* pBSTree);
+void InOrderPrint(const BSTree* pBSTree);
+void PostOrderPrint(const BSTree* pBSTree);
+
+// 循环实现
+void PreOrderPrint2(const BSTree* pBSTree);
+void InOrderPrint2(const BSTree* pBSTree);
+void PostOrderPrint2(const BSTree* pBSTree);
+
+// 层级遍历
+void LevelPrint(const BSTree* pBSTree);
+
+int main(void)
+{
+	// 创建BST
+	BSTree* pBSTree = NULL;
+
+	// 随机生成项，并添加到BST
+	srand((unsigned)time(NULL));
+	for (int i = 0; i &lt; 20; ++i)
+	{
+		AddToBSTree(&amp;pBSTree, rand() % MAX_NUM);
+	}
+	printf("height: %d\n", GetHeight(pBSTree));
+	PreOrderPrint(pBSTree); printf("\n");
+	PreOrderPrint2(pBSTree); printf("\n");
+	InOrderPrint(pBSTree); printf("\n");// 检验BST的正确性
+	InOrderPrint2(pBSTree); printf("\n");
+	PostOrderPrint(pBSTree); printf("\n");
+	PostOrderPrint2(pBSTree); printf("\n");
+	LevelPrint(pBSTree); printf("\n");
+
+	// 搜索树
+	srand((unsigned)time(NULL)&lt;&lt;2);
+	for (int i = 0; i &lt; 5; ++i)
+	{
+		int tmp = rand() % MAX_NUM;
+		if (SearchBSTree(pBSTree, tmp))
+		{
+			printf("%d: is in the BSTree\n", tmp);
+		}
+		else
+		{
+			printf("%d: is not in the BSTree\n", tmp);
+		}
+	}
+
+	// 删除节点
+	for (int i = 0; i &lt; 10; ++i)
+	{
+		RemoveFromBSTree(&amp;pBSTree, i);
+	}
+	printf("height: %d\n", GetHeight(pBSTree));
+	PreOrderPrint(pBSTree); printf("\n");
+	PreOrderPrint2(pBSTree); printf("\n");
+	InOrderPrint(pBSTree); printf("\n");// 检验BST的正确性
+	InOrderPrint2(pBSTree); printf("\n");
+	PostOrderPrint(pBSTree); printf("\n");
+	PostOrderPrint2(pBSTree); printf("\n");
+	LevelPrint(pBSTree); printf("\n");
+
+	// 删除BST
+	DeleteBSTree(&amp;pBSTree);
+
+	return 0;
+}
+
+void DeleteBSTree(BSTree** ppBSTree)
+{
+	if (NULL == ppBSTree || NULL == *ppBSTree)
+	{
+		return;
+	}
+
+	BSTree* pBSTree = *ppBSTree;
+	DeleteBSTree(&amp;(pBSTree-&gt;m_pLeft));
+	DeleteBSTree(&amp;(pBSTree-&gt;m_pRight));
+	free(pBSTree);
+	*ppBSTree = NULL;
+}
+
+void AddToBSTree(BSTree** ppBSTree, const int value)
+{
+	if (NULL == ppBSTree)
+	{
+		return;
+	}
+
+	BSTree* pTmp = *ppBSTree;
+	BSTree** ppPlaceToAdd = ppBSTree;
+	while (pTmp)
+	{
+		if (value == pTmp-&gt;m_nValue)
+		{
+			++pTmp-&gt;m_nCount;
+			return;
+		}
+		else if (value &gt; pTmp-&gt;m_nValue)
+		{
+			ppPlaceToAdd = &amp;(pTmp-&gt;m_pRight);
+			pTmp = pTmp-&gt;m_pRight;
+		}
+		else
+		{
+			ppPlaceToAdd = &amp;(pTmp-&gt;m_pLeft);
+			pTmp = pTmp-&gt;m_pLeft;
+		}
+	}
+
+	BSTree* pNode = (BSTree*)malloc(sizeof(BSTree));
+	if (NULL == pNode)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	pNode-&gt;m_nCount = 1;
+	pNode-&gt;m_nValue = value;
+	pNode-&gt;m_pLeft = NULL;
+	pNode-&gt;m_pRight = NULL;
+	*ppPlaceToAdd = pNode;
+}
+
+void RemoveFromBSTree(BSTree** ppBSTree, const int value)
+{
+	if (NULL == ppBSTree || NULL == *ppBSTree)
+	{
+		return;
+	}
+
+	BSTree* pBSTree = *ppBSTree;
+	BSTree** ppPlaceToRemove = ppBSTree;
+	while (pBSTree)
+	{
+		if (value == pBSTree-&gt;m_nValue)
+		{
+			break;
+		}
+		else if (value &lt; pBSTree-&gt;m_nValue)
+		{
+			ppPlaceToRemove = &amp;(pBSTree-&gt;m_pLeft);
+			pBSTree = pBSTree-&gt;m_pLeft;
+		}
+		else
+		{
+			ppPlaceToRemove = &amp;(pBSTree-&gt;m_pRight);
+			pBSTree = pBSTree-&gt;m_pRight;
+		}
+	}
+
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+	if (NULL == pBSTree-&gt;m_pLeft &amp;&amp; NULL == pBSTree-&gt;m_pRight)
+	{
+		*ppPlaceToRemove = NULL;
+		free(pBSTree);
+	}
+	else if (NULL == pBSTree-&gt;m_pLeft &amp;&amp; NULL != pBSTree-&gt;m_pRight)
+	{
+		*ppPlaceToRemove = pBSTree-&gt;m_pRight;
+		free(pBSTree);
+	}
+	else if (NULL != pBSTree-&gt;m_pLeft &amp;&amp; NULL == pBSTree-&gt;m_pRight)
+	{
+		*ppPlaceToRemove = pBSTree-&gt;m_pLeft;
+		free(pBSTree);
+	}
+	else
+	{
+		// 找到右子树最左边的节点
+		BSTree* pFather = pBSTree;
+		BSTree* pTmp = pBSTree-&gt;m_pRight;
+		while (pTmp-&gt;m_pLeft)
+		{
+			pFather = pTmp;
+			pTmp = pTmp-&gt;m_pLeft;
+		}
+		// 右子树没有左节点
+		if (pTmp == pBSTree-&gt;m_pRight)
+		{
+			pFather-&gt;m_pRight = pTmp-&gt;m_pRight;
+		}
+		else
+		{
+			pFather-&gt;m_pLeft = pTmp-&gt;m_pRight;
+		}
+		pFather-&gt;m_nValue = pTmp-&gt;m_nValue;
+		pFather-&gt;m_nCount = pTmp-&gt;m_nCount;
+		free(pTmp);
+	}
+}
+
+const BSTree* SearchBSTree(const BSTree* pBSTree, const int value)
+{
+	while (pBSTree)
+	{
+		if (value == pBSTree-&gt;m_nValue)
+		{
+			break;
+		}
+		else if (value &lt; pBSTree-&gt;m_nValue)
+		{
+			pBSTree = pBSTree-&gt;m_pLeft;
+		}
+		else
+		{
+			pBSTree = pBSTree-&gt;m_pRight;
+		}
+	}
+	return pBSTree;
+}
+
+// 这里用arr来保存已经查找过的节点的高度，可以用unordered_map来解决最大值限定问题
+int GetHeightInner(const BSTree* pBSTree, int arr[])
+{
+	if (NULL == pBSTree || NULL == arr)
+	{
+		return 0;
+	}
+
+	if (arr[pBSTree-&gt;m_nValue] != 0)
+	{
+		return arr[pBSTree-&gt;m_nValue];
+	}
+
+	int left = GetHeightInner(pBSTree-&gt;m_pLeft, arr);
+	int right = GetHeightInner(pBSTree-&gt;m_pRight, arr);
+	int height = left &gt; right ? left + 1 : right + 1;
+	arr[pBSTree-&gt;m_nValue] = height;
+	return height;
+}
+
+int GetHeight(const BSTree* pBSTree)
+{
+	int arr[MAX_NUM] = { 0 };
+	return GetHeightInner(pBSTree, arr);
+}
+
+void PreOrderPrint(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	printf(" %d", pBSTree-&gt;m_nValue);
+	PreOrderPrint(pBSTree-&gt;m_pLeft);
+	PreOrderPrint(pBSTree-&gt;m_pRight);
+}
+
+void InOrderPrint(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	InOrderPrint(pBSTree-&gt;m_pLeft);
+	printf(" %d", pBSTree-&gt;m_nValue);
+	InOrderPrint(pBSTree-&gt;m_pRight);
+}
+
+void PostOrderPrint(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	PostOrderPrint(pBSTree-&gt;m_pLeft);
+	PostOrderPrint(pBSTree-&gt;m_pRight);
+	printf(" %d", pBSTree-&gt;m_nValue);
+}
+
+void LevelPrint(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	// 通过高度，得到最大节点数，便于保存所有节点信息
+	// 可以使用queue代替
+	int height = GetHeight(pBSTree);
+	int maxNodeNum = (int)pow(2, height) - 1;
+	const BSTree** levelNodeArr = (const BSTree**)malloc(maxNodeNum * sizeof(BSTree*));
+	if (NULL == levelNodeArr)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	int i = 0, j = 0;
+	for (i = 0; i &lt; maxNodeNum; ++i)
+	{
+		levelNodeArr[i] = NULL;
+	}
+	levelNodeArr[0] = pBSTree;
+
+	// 按层级将节点指针保存在数组中
+	i = 0;
+	while (j &lt;= i &amp;&amp; levelNodeArr[j])
+	{
+		if (NULL != levelNodeArr[j]-&gt;m_pLeft)
+		{
+			levelNodeArr[++i] = levelNodeArr[j]-&gt;m_pLeft;
+		}
+		if (NULL != levelNodeArr[j]-&gt;m_pRight)
+		{
+			levelNodeArr[++i] = levelNodeArr[j]-&gt;m_pRight;
+		}
+		++j;
+	}
+
+	// 按数组顺序打印节点
+	for (i = 0; i &lt; j; ++i)
+	{
+		printf(" %d", levelNodeArr[i]-&gt;m_nValue);
+	}
+	free((void*)levelNodeArr);
+}
+
+void PreOrderPrint2(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	// 通过高度，得到最大节点数，便于保存所有节点信息
+	// 可以使用stack代替
+	int height = GetHeight(pBSTree);
+	int maxNodeNum = (int)pow(2, height) - 1;
+	const BSTree** stack = (const BSTree**)malloc(maxNodeNum * sizeof(BSTree*));
+	if (NULL == stack)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	int i = 0;
+	for (i = 0; i &lt; maxNodeNum; ++i)
+	{
+		stack[i] = NULL;
+	}
+
+	i = 0;
+	while (i &gt; 0 || pBSTree)
+	{
+		while (pBSTree)
+		{
+			printf(" %d", pBSTree-&gt;m_nValue);
+			stack[i++] = pBSTree;
+			pBSTree = pBSTree-&gt;m_pLeft;
+		}
+		pBSTree = stack[--i]-&gt;m_pRight;
+	}
+	free((void*)stack);
+}
+
+void InOrderPrint2(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	// 通过高度，得到最大节点数，便于保存所有节点信息
+	// 可以使用stack代替
+	int height = GetHeight(pBSTree);
+	int maxNodeNum = (int)pow(2, height) - 1;
+	const BSTree** stack = (const BSTree**)malloc(maxNodeNum * sizeof(BSTree*));
+	if (NULL == stack)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	int i = 0;
+	for (i = 0; i &lt; maxNodeNum; ++i)
+	{
+		stack[i] = NULL;
+	}
+
+	i = 0;
+	while (i &gt; 0 || pBSTree)
+	{
+		while (pBSTree)
+		{
+			stack[i++] = pBSTree;
+			pBSTree = pBSTree-&gt;m_pLeft;
+		}
+		pBSTree = stack[--i];
+		printf(" %d", pBSTree-&gt;m_nValue);
+		pBSTree = pBSTree-&gt;m_pRight;
+	}
+	free((void*)stack);
+}
+
+// 循环后序遍历很难，需要标志根节点被访问的次数，只有第二次访问时才能打印
+void PostOrderPrint2(const BSTree* pBSTree)
+{
+	if (NULL == pBSTree)
+	{
+		return;
+	}
+
+	// 通过高度，得到最大节点数，便于保存所有节点信息
+	// 可以使用stack代替
+	int height = GetHeight(pBSTree);
+	int maxNodeNum = (int)pow(2, height) - 1;
+	const BSTree** NodeStack = (const BSTree**)malloc(maxNodeNum * sizeof(BSTree*));
+	if (NULL == NodeStack)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	// 节点标志数组（栈）
+	int* SymbolStack = (int*)malloc(maxNodeNum * sizeof(int));
+	if (NULL == SymbolStack)
+	{
+		printf("malloc error\n");
+		free((void*)NodeStack);
+		return;
+	}
+
+	int i = 0;
+	for (i = 0; i &lt; maxNodeNum; ++i)
+	{
+		NodeStack[i] = NULL;
+		SymbolStack[i] = 0;
+	}
+
+	i = 0;
+	while (i &gt; 0 || pBSTree)
+	{
+		// 压栈，第一次访问
+		while (pBSTree)
+		{
+			NodeStack[i] = pBSTree;
+			SymbolStack[i++] = 0;
+			pBSTree = pBSTree-&gt;m_pLeft;
+		}
+		// 本次循环所有左节点进栈结束
+		// 若栈顶元素只访问了一次，不弹出
+		if (0 == SymbolStack[i - 1])
+		{
+			SymbolStack[i-1] = 1;
+			pBSTree = NodeStack[i-1]-&gt;m_pRight;
+		}
+		// 第二次访问了，出栈打印
+		else
+		{
+			printf(" %d", NodeStack[--i]-&gt;m_nValue);
+		}
+	}
+	free((void*)NodeStack);
+	free((void*)SymbolStack);
+}
+</code></pre>
+
+<h2 id="dynamic_table">动态表</h2>
+
+<p>动态表是一种动态扩增容量的算法，<strong>每当容量不够用时，将容量扩增一倍</strong>。该算法在能减小平均扩增的次数，如vector容器就是用的这种算法。</p>
+
+<p>动态表没什么好考的，最近发现在获取用户输入的字符串时，可以使用这种算法：</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define string char*
+
+char* GetString();
+
+int main(void)
+{
+	// 获取输入
+	string str = GetString();
+	if (NULL == str)
+	{
+		printf("GetString failed\n");
+		return 1;
+	}
+	// 打印输出
+	printf("%s\n", str);
+	free(str);
+	return 0;
+}
+
+char* GetString()
+{
+	char* pTmp = NULL;
+	char* pStr = NULL;
+	int c = 0;
+	int n = 0;         // 当前字符数
+	int capacity = 24; // 初始容量
+
+	pStr = (char*)malloc(capacity * sizeof(char));
+	if (NULL == pStr)
+	{
+		printf("malloc error\n");
+		return NULL;
+	}
+
+	printf("input a string: \n");
+	while ((c = getc(stdin)) != '\n' &amp;&amp; c != EOF)
+	{
+		// 容量不足，1位留给尾字符
+		if (n == capacity - 1)
+		{
+			capacity *= 2;
+			pTmp = (char*)malloc(capacity * sizeof(char));
+			if (NULL == pTmp)
+			{
+				// 将输入缓存清空，然后重试
+				while ((c = getc(stdin)) != '\n' &amp;&amp; c != EOF);
+				printf("retry:\n");
+				free(pStr);
+				return GetString();
+			}
+			memcpy(pTmp, pStr, n);
+			free(pStr);
+			pStr = pTmp;
+		}
+		pStr[n++] = c;
+	}
+
+	// 优化，将内存最小化
+	pTmp = (char*)malloc((n + 1) * sizeof(char));
+	if (NULL != pTmp)
+	{
+		memcpy(pTmp, pStr, n);
+		free(pStr);
+		pStr = pTmp;
+	}
+	pStr[n] = '\0';
+	return pStr;
+}
+</code></pre>
+
+<h2 id="skip_table">跳跃表</h2>
+
+<p>链表解决了数组长度有限的问题，但是查找链表需要O(n)的时间复杂度，对于大数据来说，这是不行的。跳跃表是一种查找<strong>有序链表</strong>的数据结构，它的算法复杂度是O(logn)。</p>
+
+<p>有关跳跃表的原理和图示可以参考<a href="https://www.cnblogs.com/thrillerz/p/4505550.html">跳跃表原理</a>。</p>
+
+<p>跳跃表的考察方式是实现跳跃表的插入、删除、查找，其要点是<strong>有序链表、节点有最大最小值</strong>：</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+#include &lt;limits.h&gt;
+
+typedef struct SkipListNode
+{
+	int m_nValue;
+	struct SkipListNode* m_pNext;
+	struct SkipListNode* m_pDown;
+}SkipListNode;
+
+typedef struct SkipList
+{
+	struct SkipListNode* m_pHead;
+	int m_nLevel; // 层数
+}SkipList;
+
+// 初始化链表，该链表含有两个节点，一个最小值节点，一个最大值节点
+void InitSkipListNode(SkipListNode** ppSkipListNode);
+void CreateSkipList(SkipList** ppSkipList);
+void DeleteSkipList(SkipList** ppSkipList);
+void AddToSkipList(SkipList* pSkipList, const int value);
+void RemoveFromSkipList(SkipList* pSkipList, const int value);
+SkipListNode* SearchSkipList(const SkipList* pSkipList, const int value);
+void PrintSkipList(const SkipList* pSkipList);
+
+int main(void)
+{
+	SkipList* pSkipList = NULL;
+
+	// 创建跳跃表
+	CreateSkipList(&amp;pSkipList);
+	if (NULL == pSkipList)
+	{
+		printf("create skilplist failed\n");
+		return 1;
+	}
+
+	// 添加节点
+	srand((unsigned)time(NULL));
+	for (int i = 0; i &lt; 100; ++i)
+	{
+		AddToSkipList(pSkipList, rand() % 100);
+	}
+	printf("level: %d\n", pSkipList-&gt;m_nLevel);
+	PrintSkipList(pSkipList);
+
+	// 搜索节点
+	for (int i = 0; i &lt; 10; ++i)
+	{
+		if (SearchSkipList(pSkipList, i))
+		{
+			printf("%d: in the skiplist\n", i);
+		}
+		else
+		{
+			printf("%d: not in the skiplist\n", i);
+		}
+	}
+
+	// 移除节点
+	for (int i = 0; i &lt; 10; ++i)
+	{
+		RemoveFromSkipList(pSkipList, i);
+	}
+	printf("level: %d\n", pSkipList-&gt;m_nLevel);
+	PrintSkipList(pSkipList);
+
+	// 删除跳跃表
+	DeleteSkipList(&amp;pSkipList);
+
+	return 0;
+}
+
+void InitSkipListNode(SkipListNode** ppSkipListNode)
+{
+	if (NULL == ppSkipListNode)
+	{
+		return;
+	}
+
+	SkipListNode* pHead = (SkipListNode*)malloc(sizeof(SkipListNode));
+	if (NULL == pHead)
+	{
+		return;
+	}
+	SkipListNode* pTail = (SkipListNode*)malloc(sizeof(SkipListNode));
+	if (NULL == pTail)
+	{
+		free(pHead);
+		return;
+	}
+
+	pHead-&gt;m_nValue = INT_MIN;
+	pHead-&gt;m_pNext = pTail;
+	pHead-&gt;m_pDown = NULL;
+	pTail-&gt;m_nValue = INT_MAX;
+	pTail-&gt;m_pNext = NULL;
+	pTail-&gt;m_pDown = NULL;
+	*ppSkipListNode = pHead;
+}
+
+void CreateSkipList(SkipList** ppSkipList)
+{
+	if (NULL == ppSkipList)
+	{
+		return;
+	}
+
+	SkipList* pSkipList = (SkipList*)malloc(sizeof(SkipList));
+	if (NULL == pSkipList)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	pSkipList-&gt;m_nLevel = 1;
+	InitSkipListNode(&amp;(pSkipList-&gt;m_pHead));
+	*ppSkipList = pSkipList;
+}
+
+void DeleteSkipList(SkipList** ppSkipList)
+{
+	if (NULL == ppSkipList || NULL == *ppSkipList)
+	{
+		return;
+	}
+
+	// 按层级从左到右删除节点
+	SkipListNode* pHead = (*ppSkipList)-&gt;m_pHead;
+	SkipListNode* pCurr = NULL;
+	SkipListNode* pNext = NULL;
+	while (pHead)
+	{
+		pCurr = pHead;
+		pHead = pHead-&gt;m_pDown;
+		while (pCurr)
+		{
+			pNext = pCurr-&gt;m_pNext;
+			free(pCurr);
+			pCurr = pNext;
+		}
+	}
+
+	// 删除跳跃表
+	free(*ppSkipList);
+	*ppSkipList = NULL;
+}
+
+void AddToSkipList(SkipList* pSkipList, const int value)
+{
+	if (NULL == pSkipList)
+	{
+		return;
+	}
+
+	// 构造栈，保存插入位置前一个节点的指针
+	SkipListNode** stack = (SkipListNode**)malloc(pSkipList-&gt;m_nLevel*sizeof(SkipListNode*));
+	if (NULL == stack)
+	{
+		printf("malloc error\n");
+		return;
+	}
+	
+	// 查找插入位置
+	int i = 0;
+	SkipListNode* pCurr = pSkipList-&gt;m_pHead;
+	while (pCurr)
+	{
+		if (value &gt; pCurr-&gt;m_nValue)
+		{
+			stack[i] = pCurr;
+			pCurr = pCurr-&gt;m_pNext;
+		}
+		else if (value &lt; pCurr-&gt;m_nValue)
+		{
+			pCurr = stack[i++]-&gt;m_pDown;
+		}
+		else
+		{
+			free(stack);
+			return;
+		}
+	}
+
+	// 随机算法，决定插入该节点的层数
+	int level = 1;
+	while (rand() % 2)
+	{
+		++level;
+	}
+
+	// 添加节点
+	SkipListNode* pSkipListNode1 = NULL;
+	SkipListNode* pSkipListNode2 = NULL;
+	for (int j = 0; i &gt; 0 &amp;&amp; j &lt; pSkipList-&gt;m_nLevel &amp;&amp; j &lt; level; ++j)
+	{
+		pSkipListNode2 = (SkipListNode*)malloc(sizeof(SkipListNode));
+		if (NULL == pSkipListNode2)
+		{
+			free(stack);
+			return;
+		}
+		pCurr = stack[--i];
+		pSkipListNode2-&gt;m_nValue = value;
+		pSkipListNode2-&gt;m_pNext = pCurr-&gt;m_pNext;
+		pSkipListNode2-&gt;m_pDown = pSkipListNode1;
+		pSkipListNode1 = pSkipListNode2;
+		pCurr-&gt;m_pNext = pSkipListNode2;
+	}
+	free(stack);
+
+	// 添加层数
+	for (int j = pSkipList-&gt;m_nLevel; j &lt; level; ++j)
+	{
+		pSkipListNode2 = (SkipListNode*)malloc(sizeof(SkipListNode));
+		if (NULL == pSkipListNode2)
+		{
+			return;
+		}
+
+		InitSkipListNode(&amp;pCurr);
+		pCurr-&gt;m_pDown = pSkipList-&gt;m_pHead;
+		pSkipList-&gt;m_pHead = pCurr;
+		pSkipList-&gt;m_nLevel = j + 1;
+		pSkipListNode2-&gt;m_nValue = value;
+		pSkipListNode2-&gt;m_pNext = pCurr-&gt;m_pNext;
+		pSkipListNode2-&gt;m_pDown = pSkipListNode1;
+		pSkipListNode1 = pSkipListNode2;
+		pCurr-&gt;m_pNext = pSkipListNode2;
+	}
+}
+
+void RemoveFromSkipList(SkipList* pSkipList, const int value)
+{
+	if (NULL == pSkipList || NULL == pSkipList-&gt;m_pHead || 1 &gt; pSkipList-&gt;m_nLevel)
+	{
+		return;
+	}
+
+	// 不能删最值
+	if (INT_MAX == value || INT_MIN == value)
+	{
+		return;
+	}
+
+	// 找到最高层需要删除的节点
+	SkipListNode* pPre = pSkipList-&gt;m_pHead;
+	SkipListNode* pRemoveNode = pPre-&gt;m_pNext;
+	while (pRemoveNode)
+	{
+		if (value &gt; pRemoveNode-&gt;m_nValue)
+		{
+			pPre = pRemoveNode;
+			pRemoveNode = pRemoveNode-&gt;m_pNext;
+		}
+		else if (value &lt; pRemoveNode-&gt;m_nValue)
+		{
+			pRemoveNode = pPre-&gt;m_pDown;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	// 没找到
+	if (NULL == pRemoveNode)
+	{
+		return;
+	}
+
+	// 删除节点
+	SkipListNode* pNext = NULL;
+	SkipListNode* pDown = NULL;
+	while (pRemoveNode)
+	{
+		while (pPre-&gt;m_pNext-&gt;m_nValue &lt; value)
+		{
+			pPre = pPre-&gt;m_pNext;
+		}
+		pPre-&gt;m_pNext = pRemoveNode-&gt;m_pNext;
+		pPre = pPre-&gt;m_pDown;
+		pRemoveNode = pRemoveNode-&gt;m_pDown;
+	}
+
+	// 删除空层
+	while (pRemoveNode = pSkipList-&gt;m_pHead)
+	{
+		// 只有最值节点
+		if (NULL != pRemoveNode-&gt;m_pNext-&gt;m_pNext)
+		{
+			break;
+		}
+		pSkipList-&gt;m_pHead = pRemoveNode-&gt;m_pDown;
+		pSkipList-&gt;m_nLevel--;
+		free(pRemoveNode-&gt;m_pNext);
+		free(pRemoveNode);
+	}
+}
+
+SkipListNode* SearchSkipList(const SkipList* pSkipList, const int value)
+{
+	if (NULL == pSkipList || NULL == pSkipList-&gt;m_pHead || pSkipList-&gt;m_nLevel &lt; 1)
+	{
+		return NULL;
+	}
+
+	SkipListNode* pPre = pSkipList-&gt;m_pHead;
+	SkipListNode* pCurr = pPre-&gt;m_pNext;
+	while (pCurr)
+	{
+		if (value &gt; pCurr-&gt;m_nValue)
+		{
+			pPre = pCurr;
+			pCurr = pCurr-&gt;m_pNext;
+		}
+		else if (value &lt; pCurr-&gt;m_nValue)
+		{
+			pCurr = pPre-&gt;m_pDown;
+		}
+		else
+		{
+			return pCurr;
+		}
+	}
+
+	return NULL;
+}
+
+void PrintSkipList(const SkipList* pSkipList)
+{
+	if (NULL == pSkipList || NULL == pSkipList-&gt;m_pHead || pSkipList-&gt;m_nLevel &lt; 1)
+	{
+		return;
+	}
+
+	SkipListNode* pHead = pSkipList-&gt;m_pHead;
+	SkipListNode* pCurr = NULL;
+	SkipListNode* pDown = NULL;
+	while (pHead)
+	{
+		pCurr = pHead;
+		pHead = pHead-&gt;m_pDown;
+		while (pCurr)
+		{
+			printf(" %d", pCurr-&gt;m_nValue);
+			pCurr = pCurr-&gt;m_pNext;
+		}
+		printf("\n");
+	}
+}
+</code></pre>
+
+<h2 id="stl">标准容器</h2>
+
+<p>C++ 标准容器包含 vector,deque,list,forward_list,array,string,stack,queue,priority_queue,map,set,multimap,multiset,unordered_map,unordered_set,unordered_multimap,unordered_multiset 17种类型。</p>
+
+<p>其考察方式一般是其特性和底层数据结构：</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>容器</th>
+      <th>特性</th>
+      <th>底层数据结构</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>vector</td>
+      <td>可变大小数组<br />元素保存在连续的内存空间中<br />支持快速随机访问<br />在尾部之外的位置插入或删除元素很慢</td>
+      <td>动态表</td>
+    </tr>
+    <tr>
+      <td>deque</td>
+      <td>双端队列<br />支持快速随机访问<br />在头尾插入、删除元素很快</td>
+      <td>一个中央控制器和多个缓冲区，链表+数组</td>
+    </tr>
+    <tr>
+      <td>list</td>
+      <td>在任何位置插入、删除都很快<br />额外内存较其他顺序容器开销很大</td>
+      <td>双向链表</td>
+    </tr>
+    <tr>
+      <td>forward_list</td>
+      <td>在任何位置插入、删除都很快<br />额外内存较其他顺序容器开销很大</td>
+      <td>单向链表</td>
+    </tr>
+    <tr>
+      <td>array</td>
+      <td>支持快速随机访问<br />不能添加或删除元素</td>
+      <td>静态数组</td>
+    </tr>
+    <tr>
+      <td>string</td>
+      <td>元素保存在连续的内存空间中<br />支持快速随机访问<br />在尾部插入、删除元素很快<br />它有自己特有的相关函数，所以与vector分开</td>
+      <td>动态表</td>
+    </tr>
+    <tr>
+      <td>stack</td>
+      <td>后进先出LIFO<br />不支持随机访问<br />只支持尾部插入、弹出</td>
+      <td>容器适配器<br />默认基于deque实现</td>
+    </tr>
+    <tr>
+      <td>queue</td>
+      <td>先进先出FIFO<br />不支持随机访问<br />只支持返回首尾元素和删除首元素</td>
+      <td>容器适配器<br />默认基于deque实现</td>
+    </tr>
+    <tr>
+      <td>priority_queue</td>
+      <td>先进先出FIFO<br />不支持随机访问<br />需要定义优先级函数<br />只支持返回最高优先级元素和删除首元素</td>
+      <td>容器适配器<br />默认基于vector+最大堆实现</td>
+    </tr>
+    <tr>
+      <td>map</td>
+      <td>键值对<br />元素默认按关键字从小到大排列<br />支持下标</td>
+      <td>红黑树</td>
+    </tr>
+    <tr>
+      <td>set</td>
+      <td>关键字即值<br />元素默认按关键字从小到大排列<br />不支持下标</td>
+      <td>红黑树</td>
+    </tr>
+    <tr>
+      <td>multimap</td>
+      <td>关键字可重复出现的map</td>
+      <td>红黑树</td>
+    </tr>
+    <tr>
+      <td>multiset</td>
+      <td>关键字可重复出现的set</td>
+      <td>红黑树</td>
+    </tr>
+    <tr>
+      <td>unordered_map</td>
+      <td>无序<br />关键字不重复</td>
+      <td>哈希表</td>
+    </tr>
+    <tr>
+      <td>unordered_set</td>
+      <td>无序<br />关键字不重复</td>
+      <td>哈希表</td>
+    </tr>
+    <tr>
+      <td>unordered_multimap</td>
+      <td>无序<br />关键字可重复</td>
+      <td>哈希表</td>
+    </tr>
+    <tr>
+      <td>unordered_multiset</td>
+      <td>无序<br />关键字可重复</td>
+      <td>哈希表</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="search_algorithm">查找</h2>
+
+<p>查找是面试考察的重点，对于常见的查找应信手拈来。</p>
+
+<p>查找考察的方式有很多，下面举出3个例子：</p>
+
+<ol>
+  <li>二分查找；</li>
+  <li>查找数组中第K小的数和最小的K个数；</li>
+  <li>把一个数组的最开始若干个数搬到数组的末尾，称为旋转。输入一个递增排序的数组的一个旋转，输出该数组中最小的元素。如输入{3,4,5,1,2}，输出1。</li>
+</ol>
+
+<pre><code class="language-C++">// 由于C++实现了诸多数据结构和算法，所以使用C++来实现算法会比较方便
+#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;ctime&gt;
+#include &lt;algorithm&gt;
+
+#define MAX_NUM 33
+
+using namespace std;
+
+// 二分查找
+int BinarySearch(const int arr[], const int n, const int value);
+
+// 查找旋转数组中最小的元素的下标
+int MinInRotateArray(const int arr[], const int n);
+
+// 打印数组，便于观察
+void PrintArray(const int arr[], const int n);
+
+int main()
+{
+	// 创建随机数组
+	cout &lt;&lt; "random array: " &lt;&lt; endl;
+	int arr[MAX_NUM] = {};
+	srand((unsigned)time(nullptr));
+	for (int i = 0; i &lt; MAX_NUM; ++i)
+	{
+		arr[i] = rand() % 100;
+	}
+	PrintArray(arr, MAX_NUM);
+
+	// 查找数组中第K小的数，前K个最小数
+	cout &lt;&lt; "\nsearch kth num" &lt;&lt; endl;
+	int k = 0;
+	int kth = -1;
+	for (int i = 0; i &lt; 3; ++i)
+	{
+		k = rand() % MAX_NUM + 1;
+		// 该算法复杂度为0(N)，第K个数为第K小的数，前K个数为最小的K个数
+		nth_element(begin(arr), begin(arr) + k - 1, end(arr));
+		cout &lt;&lt; k &lt;&lt; "th: arr[" &lt;&lt; k &lt;&lt; "]=" &lt;&lt; arr[k-1] &lt;&lt; endl;
+		PrintArray(arr, k);
+	}
+
+	// 二分查找
+	cout &lt;&lt; "\nbinary search" &lt;&lt; endl;
+	sort(begin(arr), end(arr));
+	PrintArray(arr, MAX_NUM);
+	int target = 0;
+	int index = 0;
+	for (int i = 0; i &lt; 3; ++i)
+	{
+		target = rand() % 100;
+		index = BinarySearch(arr, MAX_NUM, target);
+		if (-1 != index)
+		{
+			cout &lt;&lt; target &lt;&lt; ": arr[" &lt;&lt; index &lt;&lt; "]" &lt;&lt; endl;
+		}
+		else
+		{
+			cout &lt;&lt; target &lt;&lt; ": not found" &lt;&lt; endl;
+		}
+	}
+
+	// 查找旋转数组中最小的值
+	cout &lt;&lt; "\nsearch smallest num" &lt;&lt; endl;
+	int rotateArr[MAX_NUM] = {};
+	for (int i = 0; i &lt; 3; ++i)
+	{
+		k = rand() % MAX_NUM;
+		for (int j = 0; j &lt; MAX_NUM; ++j)
+		{
+			rotateArr[(j + k) % MAX_NUM] = arr[j];
+		}
+		index = MinInRotateArray(rotateArr, MAX_NUM);
+		if (-1 != index)
+		{
+			cout &lt;&lt; "arr[" &lt;&lt; index &lt;&lt; "]=" &lt;&lt; rotateArr[index] &lt;&lt; endl;
+		}
+	}
+
+	return 0;
+}
+
+int BinarySearch(const int arr[], const int n, const int value)
+{
+	if (nullptr == arr || n &lt; 0)
+	{
+		return -1;
+	}
+
+	int left = 0;
+	int right = n-1;
+	int mid = 0;
+	while (left &lt;= right)
+	{
+		mid = (left + right) / 2;
+		if (value &gt; arr[mid])
+		{
+			left = mid + 1;
+		}
+		else
+		{
+			right = mid - 1;
+		}
+	}
+	return (value == arr[left]) ? left : -1;
+}
+
+// 线性搜索旋转数组中最小的值
+int LinearSearch(const int arr[], const int n, const int left, const int right)
+{
+	if (nullptr == arr || n &lt; 0 || left &lt; 0 || right &gt;= n || right &lt; left)
+	{
+		return -1;
+	}
+
+	int i = 0;
+	for (i = left + 1; i &lt;= right; ++i)
+	{
+		if (arr[i] &lt; arr[i - 1])
+		{
+			return i;
+		}
+	}
+	return left;
+}
+
+int MinInRotateArray(const int arr[], const int n)
+{
+	if (nullptr == arr || n &lt; 0)
+	{
+		return -1;
+	}
+
+	int left = 0;
+	int right = n - 1;
+	int mid = 0;
+	while (left &lt; right)
+	{
+		mid = (left + right) / 2;
+		if (arr[left] &lt; arr[mid])
+		{
+			left = mid;
+		}
+		else if (arr[left] &gt; arr[mid])
+		{
+			right = mid;
+		}
+		else
+		{
+			return LinearSearch(arr, n, left, right);
+		}
+	}
+	return left;
+}
+
+void PrintArray(const int arr[], const int n)
+{
+	if (nullptr == arr || n &lt; 0)
+	{
+		return;
+	}
+
+	for (int i = 0; i &lt; n; ++i)
+	{
+		cout &lt;&lt; "(" &lt;&lt; i &lt;&lt; ")" &lt;&lt; arr[i] &lt;&lt; " ";
+	}
+	cout &lt;&lt; endl;
+}
+</code></pre>
+
+<h2 id="sort_algorithm">排序</h2>
+
+<p>排序也是面试考察的重点之一，其考察方式一般是考察<a href="https://www.cnblogs.com/onepixel/articles/7674659.html">常用排序</a>的优劣及其复杂度，并能够快速写出快排、归并排序：</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>算法</th>
+      <th>时间复杂度</th>
+      <th>空间复杂度</th>
+      <th>稳定性</th>
+      <th>适用场景</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>插入排序</td>
+      <td>O(n) ~ 0(n^2)</td>
+      <td>O(1)</td>
+      <td>稳定</td>
+      <td>元素较少或大多数元素有序</td>
+    </tr>
+    <tr>
+      <td>希尔排序</td>
+      <td>O(n) ~ O(n^2)</td>
+      <td>O(1)</td>
+      <td>不稳定</td>
+      <td>元素较少或大多数元素有序</td>
+    </tr>
+    <tr>
+      <td>冒泡排序</td>
+      <td>O(n) ~ O(n^2)</td>
+      <td>O(1)</td>
+      <td>稳定</td>
+      <td>元素较少或大多数元素有序</td>
+    </tr>
+    <tr>
+      <td>快速排序</td>
+      <td>O(nlogn) ~ O(n^2)</td>
+      <td>O(nlogn)</td>
+      <td>不稳定</td>
+      <td>大多数场景</td>
+    </tr>
+    <tr>
+      <td>选择排序</td>
+      <td>O(n^2)</td>
+      <td>O(1)</td>
+      <td>不稳定</td>
+      <td>元素较少或大多数元素有序</td>
+    </tr>
+    <tr>
+      <td>堆排序</td>
+      <td>O(nlogn)</td>
+      <td>O(1)</td>
+      <td>不稳定</td>
+      <td>大多数场景</td>
+    </tr>
+    <tr>
+      <td>归并排序</td>
+      <td>O(nlogn)</td>
+      <td>O(n)</td>
+      <td>稳定</td>
+      <td>大多数场景</td>
+    </tr>
+    <tr>
+      <td>桶排序</td>
+      <td>O(n+k) ~ O(n^2)</td>
+      <td>O(k)</td>
+      <td>稳定</td>
+      <td>大多数场景</td>
+    </tr>
+    <tr>
+      <td>计数排序</td>
+      <td>O(n+k)</td>
+      <td>O(k)</td>
+      <td>稳定</td>
+      <td>元素有取值范围，且范围跨度不大</td>
+    </tr>
+    <tr>
+      <td>基数排序</td>
+      <td>O(kn)</td>
+      <td>O(n+k)</td>
+      <td>稳定</td>
+      <td>大多数场景</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+#define MAX_NUM 100000
+
+void MergeSort(int arr[], const int n);
+void FastSort(int arr[], const int n);
+
+int IsSorted(int arr[], const int n);
+
+int main(void)
+{
+	// 构造随机数组
+	int arr1[MAX_NUM] = { 0 };
+	int arr2[MAX_NUM] = { 0 };
+
+	srand((unsigned)time(NULL));
+	for (int i = 0; i &lt; MAX_NUM; ++i)
+	{
+		arr1[i] = rand();
+		arr2[i] = rand();
+	}
+
+	// 排序
+	MergeSort(arr1, MAX_NUM);
+	FastSort(arr2, MAX_NUM);
+
+	printf("arr1 is Sorted: %d\n", IsSorted(arr1, MAX_NUM));
+	printf("arr2 is Sorted: %d\n", IsSorted(arr2, MAX_NUM));
+
+	getchar();
+	return 0;
+}
+
+// 由上层确保参数有效性
+static void Merge(int arr[], int left, int mid, int right, int tmp[])
+{
+	int i = left;
+	int j = mid+1;
+	int k = 0;
+	while (i &lt;= mid &amp;&amp; j &lt;= right)
+	{
+		if (arr[i] &lt; arr[j])
+		{
+			tmp[k++] = arr[i++];
+		}
+		else
+		{
+			tmp[k++] = arr[j++];
+		}
+	}
+
+	while (i &lt;= mid)
+	{
+		tmp[k++] = arr[i++];
+	}
+
+	while (j &lt;= right)
+	{
+		tmp[k++] = arr[j++];
+	}
+
+	// 将辅助数组的值拷贝到原数组中
+	for (i = left, j = 0; j &lt; k; ++i, ++j)
+	{
+		arr[i] = tmp[j];
+	}
+}
+
+// 由上层确保参数有效性
+static void MergeSortInner(int arr[], int left, int right, int tmp[])
+{
+	if (left &lt; right)
+	{
+		int mid = (left + right) / 2;
+		MergeSortInner(arr, left, mid, tmp);
+		MergeSortInner(arr, mid + 1, right, tmp);
+		Merge(arr, left, mid, right, tmp);
+	}
+}
+
+void MergeSort(int arr[], const int n)
+{
+	if (NULL == arr || n &lt; 0)
+	{
+		return;
+	}
+
+	// 辅助数组
+	int* tmp = (int*)malloc(n * sizeof(int));
+	if (NULL == tmp)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	MergeSortInner(arr, 0, n - 1, tmp);
+	free(tmp);
+}
+
+static inline swap(int arr[], int i, int j)
+{
+	if (i != j)
+	{
+		int tmp = arr[i];
+		arr[i] = arr[j];
+		arr[j] = tmp;
+	}
+}
+
+// 由上层确保参数有效性，插入排序
+static void InsertSort(int arr[], int left, int right)
+{
+	int i = 0, j = 0;
+	int tmp = 0;
+	for (i = left+1; i &lt;= right; ++i)
+	{
+		tmp = arr[i];
+		for (j = i; j &gt; left; --j)
+		{
+			if (arr[j-1] &gt; tmp)
+			{
+				arr[j] = arr[j - 1];
+			}
+			else
+			{
+				arr[j] = tmp;
+				break;
+			}
+		}
+	}
+}
+
+// 选择一个数，使得左边的数都比它小，右边的数都比它大
+// 由上层确保参数有效性
+static int partition(int arr[], int left, int right)
+{
+	if (left &gt;= right)
+	{
+		return left;
+	}
+
+	int base = arr[left];
+	int i = left + 1; // i指向第一个大于base的元素的下标
+	for (int j = left + 1; j &lt;= right; ++j)
+	{
+		if (arr[j] &lt; base)
+		{
+			swap(arr, i++, j);
+		}
+	}
+	swap(arr, --i, left);
+	return i;
+}
+
+// 由上层确保参数有效性
+static void FastSortInner(int arr[], int left, int right)
+{
+	if (left &lt; right)
+	{
+		// 小于32做插入排序
+		if (right - left &lt; 32)
+		{
+			InsertSort(arr, left, right);
+		}
+		else
+		{
+			int idx = partition(arr, left, right);
+			FastSortInner(arr, left, idx-1);
+			FastSortInner(arr, idx+1, right);
+		}
+	}
+}
+
+void FastSort(int arr[], const int n)
+{
+	if (NULL != arr &amp;&amp; n &gt; 0)
+	{
+		FastSortInner(arr, 0, n - 1);
+	}
+}
+
+int IsSorted(int arr[], const int n)
+{
+	if (NULL == arr || n &lt; 0)
+	{
+		return 0;
+	}
+
+	for (int i = 1; i &lt; n; ++i)
+	{
+		if (arr[i] &lt; arr[i - 1])
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+</code></pre>
+
+<h2 id="divide_and_conquer">分治法</h2>
+
+<p>分治法的精髓：</p>
+
+<ul>
+  <li>分–将问题分解为规模更小的子问题；</li>
+  <li>治–将这些规模更小的子问题逐个击破；</li>
+  <li>合–将已解决的子问题合并，最终得出“母”问题的解。</li>
+</ul>
+
+<p>分治法的考察方式一般是考察分治思维，如归并算法、快排、求根号等都属于分治法的范围。下面举出一个leetcode上的一道题目–<a href="https://leetcode.com/problems/median-of-two-sorted-arrays/">两个排序数组的中位数</a>：</p>
+
+<p>像这种题先通过最先想到的办法去求解，然后再考虑是否有更优的解法。我当时看到两个排序数组，一开始想到的是归并排序，当然这里不用排序，只需要找到中间那一个或两个数就可以了，这样的想法当然是对的，只是时间复杂度是O((M+N)/2)，不满足题目要求，考虑能否使用分治法对其进行求解：</p>
+
+<p>要如何将这个问题进行分割？将两个数组直接减半，如果左边的两个数组元素值都小于右边的两个数组的元素值，那么中值不就在中间四个数中产生么？如果不是呢，那么把大的那个左边的数组划一半给右边，同时满足左边元素的总个数为总数组元素的一半，如果左边的两个数组元素值都小于右边的两个数组的元素值，那么中值还是在划分的地方的两个或四个数中产生；卧槽，我真是个天才！</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+#define MAX_NUM1 1000000
+#define MAX_NUM2 2000000
+
+// 归并排序
+void MergeSort(int arr[], const int n);
+
+// 查找两个排序数组的中位数，归并排序法，用于验证
+double findMedianSortedArrays1(int* nums1, int nums1Size, int* nums2, int nums2Size);
+// 查找两个排序数组的中位数，分治法
+double findMedianSortedArrays2(int* nums1, int nums1Size, int* nums2, int nums2Size);
+
+int main(void)
+{
+	// 构造随机数组
+	int* arr1 = (int*)malloc(MAX_NUM1 * sizeof(int));
+	int* arr2 = (int*)malloc(MAX_NUM2 * sizeof(int));
+	if (NULL == arr1 || NULL == arr2)
+	{
+		printf("malloc error\n");
+		return 1;
+	}
+
+	srand((unsigned)time(NULL));
+	for (int i = 0; i &lt; MAX_NUM1; ++i)
+	{
+		arr1[i] = rand();
+	}
+	for (int i = 0; i &lt; MAX_NUM2; ++i)
+	{
+		arr2[i] = rand();
+	}
+
+	// 排序
+	MergeSort(arr1, MAX_NUM1);
+	MergeSort(arr2, MAX_NUM2);
+
+	// 查找两个排序数组的中位数
+	double median1 = findMedianSortedArrays1(arr1, MAX_NUM1, arr2, MAX_NUM2);
+	double median2 = findMedianSortedArrays2(arr1, MAX_NUM1, arr2, MAX_NUM2);
+	printf("median1: %.2f\n", median1);
+	printf("median2: %.2f\n", median2);
+
+	free(arr1);
+	free(arr2);
+	return 0;
+}
+
+// 由上层确保参数有效性
+static void Merge(int arr[], int left, int mid, int right, int tmp[])
+{
+	int i = left;
+	int j = mid+1;
+	int k = 0;
+	while (i &lt;= mid &amp;&amp; j &lt;= right)
+	{
+		if (arr[i] &lt; arr[j])
+		{
+			tmp[k++] = arr[i++];
+		}
+		else
+		{
+			tmp[k++] = arr[j++];
+		}
+	}
+
+	while (i &lt;= mid)
+	{
+		tmp[k++] = arr[i++];
+	}
+
+	while (j &lt;= right)
+	{
+		tmp[k++] = arr[j++];
+	}
+
+	// 将辅助数组的值拷贝到原数组中
+	for (i = left, j = 0; j &lt; k; ++i, ++j)
+	{
+		arr[i] = tmp[j];
+	}
+}
+
+// 由上层确保参数有效性
+static void MergeSortInner(int arr[], int left, int right, int tmp[])
+{
+	if (left &lt; right)
+	{
+		int mid = (left + right) / 2;
+		MergeSortInner(arr, left, mid, tmp);
+		MergeSortInner(arr, mid + 1, right, tmp);
+		Merge(arr, left, mid, right, tmp);
+	}
+}
+
+void MergeSort(int arr[], const int n)
+{
+	if (NULL == arr || n &lt; 0)
+	{
+		return;
+	}
+
+	// 辅助数组
+	int* tmp = (int*)malloc(n * sizeof(int));
+	if (NULL == tmp)
+	{
+		printf("malloc error\n");
+		return;
+	}
+
+	MergeSortInner(arr, 0, n - 1, tmp);
+	free(tmp);
+}
+
+// 查找两个排序数组的中位数，归并排序法，用于验证
+double findMedianSortedArrays1(int* nums1, int nums1Size, int* nums2, int nums2Size)
+{
+	if (NULL == nums1 || NULL == nums2 || 0 &gt; nums1Size || 0 &gt; nums2Size)
+	{
+		return 0.0;
+	}
+
+	int totalSize = nums1Size + nums2Size;
+	int idxMidLeft = (totalSize - 1) / 2; // 减一取中值最小值
+	int idxMidRight = totalSize % 2 ? idxMidLeft : idxMidLeft + 1;
+	int numMidLeft = 0, numMidRight = 0;
+
+	// 归并merge
+	int i = 0, j = 0, idx = 0;
+	while (i &lt; nums1Size &amp;&amp; j &lt; nums2Size &amp;&amp; idx &lt;= idxMidRight)
+	{
+		if (nums1[i] &lt; nums2[j])
+		{
+			numMidRight = nums1[i++];
+		}
+		else
+		{
+			numMidRight = nums2[j++];
+		}
+		if (idx == idxMidLeft)
+		{
+			numMidLeft = numMidRight;
+		}
+		++idx;
+	}
+	while (i &lt; nums1Size &amp;&amp; idx &lt;= idxMidRight)
+	{
+		numMidRight = nums1[i++];
+		if (idx == idxMidLeft)
+		{
+			numMidLeft = numMidRight;
+		}
+		++idx;
+	}
+	while (j &lt; nums2Size &amp;&amp; idx &lt;= idxMidRight)
+	{
+		numMidRight = nums2[j++];
+		if (idx == idxMidLeft)
+		{
+			numMidLeft = numMidRight;
+		}
+		++idx;
+	}
+	return (numMidLeft + numMidRight) / 2.0;
+}
+
+// 查找两个排序数组的中位数，分治法
+double findMedianSortedArrays2(int* nums1, int nums1Size, int* nums2, int nums2Size)
+{
+	if (NULL == nums1 || NULL == nums2 || 0 &gt; nums1Size || 0 &gt; nums2Size)
+	{
+		return 0.0;
+	}
+	
+	// 根据nums1进行划分，为防止划分nums2时出现负数，操作使得nums1的长度小于等于nums2的长度
+	if (nums1Size &gt; nums2Size)
+	{
+		return findMedianSortedArrays2(nums2, nums2Size, nums1, nums1Size);
+	}
+
+	// 初始划分
+	int imin = 0, imax = nums1Size;
+	int totalSize = nums1Size + nums2Size;
+	int mid = (totalSize + 1) / 2; // 奇数时多划分一次
+	int i = 0, j = 0; // 划分界
+	int maxLeft = 0, minRight = 0;
+	while (imin &lt;= imax)
+	{
+		i = (imin + imax) / 2; // 取半
+		j = mid - i;
+		// nums1的划分太小了
+		if (i &lt; nums1Size &amp;&amp; nums1[i] &lt; nums2[j - 1]) imin = i + 1;
+		// nums1的划分太大了
+		else if (i &gt; 0 &amp;&amp; nums1[i - 1] &gt; nums2[j]) imax = i - 1;
+		// 划分结束了
+		else
+		{
+			if (i == 0) maxLeft = nums2[j - 1];
+			else if (j == 0) maxLeft = nums1[i - 1];
+			else maxLeft = nums2[j - 1] &gt; nums1[i - 1] ? nums2[j - 1] : nums1[i - 1];
+
+			// 奇数个数的中值就是左边数组的最大值
+			if (totalSize % 2) return maxLeft;
+
+			if (i == nums1Size) minRight = nums2[j];
+			else if (j == nums2Size) minRight = nums1[i];
+			else minRight = nums2[j] &gt; nums1[i] ? nums1[i] : nums2[j];
+			break;
+		}
+	}
+	return (maxLeft + minRight) / 2.0;
+}
+</code></pre>
+
+<p>闲来无事发现一道更为容易理解的算法题，<a href="https://leetcode.com/problems/merge-k-sorted-lists/">合并K个排序链表</a>，根据分治法，将问题划分为小问题，先合并两个链表，再将合并后的链表两两合并，最后合并成一条链表，即运用了归并排序的思想，相信很容易理解：</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;
+
+#define K 20
+#define TOTALNUM 100
+
+typedef struct ListNode {
+	int val;
+	struct ListNode *next;
+}ListNode;
+
+// 有序插入
+void InsertToList(ListNode** ppHead, int val);
+void DeleteList(ListNode** ppHead);
+void PrintList(const ListNode* pHead);
+
+ListNode* MergeKLists(ListNode** lists, int listsSize);
+
+int main()
+{
+	// 创建链表
+	ListNode** lists = (ListNode**)malloc(K * sizeof(ListNode*));
+	if (NULL == lists)
+	{
+		printf("malloc error\n");
+		return 1;
+	}
+	for (int i = 0; i &lt; K; ++i)
+	{
+		lists[i] = NULL;
+	}
+
+	// 随机生成元素
+	int tmp = 0;
+	srand((unsigned)time(0));
+	for (int i = 0; i &lt; TOTALNUM; ++i)
+	{
+		tmp = rand() % TOTALNUM;
+		InsertToList(lists + tmp%K, tmp);
+	}
+
+	// 打印链表，便于观察
+	for (int i = 0; i &lt; K; ++i)
+	{
+		PrintList(lists[i]);
+	}
+
+	// 合并K个排序链表
+	printf("after merged:\n");
+	ListNode* mergedList = MergeKLists(lists, K);
+	PrintList(mergedList);
+
+	// 清理链表
+	DeleteList(&amp;mergedList);
+	return 0;
+}
+
+void InsertToList(ListNode** ppHead, int val)
+{
+	if (NULL == ppHead)
+	{
+		return;
+	}
+
+	ListNode* pListNode = (ListNode*)malloc(sizeof(ListNode));
+	if (NULL == pListNode)
+	{
+		return;
+	}
+
+	ListNode* pTmp = *ppHead;
+	ListNode** ppPlaceToInsert = ppHead;
+	while (pTmp)
+	{
+		if (pTmp-&gt;val &gt;= val) break;
+		ppPlaceToInsert = &amp;(pTmp-&gt;next);
+		pTmp = pTmp-&gt;next;
+	}
+	pListNode-&gt;val = val;
+	pListNode-&gt;next = *ppPlaceToInsert;
+	*ppPlaceToInsert = pListNode;
+}
+
+void DeleteList(ListNode** ppHead)
+{
+	if (NULL == ppHead)
+	{
+		return;
+	}
+
+	ListNode* pTmp = *ppHead;
+	ListNode* pNext = NULL;
+	while (pTmp)
+	{
+		pNext = pTmp-&gt;next;
+		free(pTmp);
+		pTmp = pNext;
+	}
+	*ppHead = NULL;
+}
+
+void PrintList(const ListNode* pHead)
+{
+	while (pHead)
+	{
+		printf(" %d", pHead-&gt;val);
+		pHead = pHead-&gt;next;
+	}
+	printf("\n");
+}
+
+static ListNode* Merge(ListNode* list1, ListNode* list2)
+{
+	if (NULL == list1) return list2;
+	if (NULL == list2) return list1;
+
+	ListNode* pMergedList = NULL;
+	if (list1-&gt;val &lt; list2-&gt;val)
+	{
+		pMergedList = list1;
+		list1 = list1-&gt;next;
+	}
+	else
+	{
+		pMergedList = list2;
+		list2 = list2-&gt;next;
+	}
+
+	// 归并排序
+	ListNode* pTmp = pMergedList;
+	while (list1 &amp;&amp; list2)
+	{
+		if (list1-&gt;val &lt; list2-&gt;val)
+		{
+			pTmp-&gt;next = list1;
+			list1 = list1-&gt;next;
+			pTmp = pTmp-&gt;next;
+		}
+		else
+		{
+			pTmp-&gt;next = list2;
+			list2 = list2-&gt;next;
+			pTmp = pTmp-&gt;next;
+		}
+	}
+	if (NULL == list1) pTmp-&gt;next = list2;
+	else pTmp-&gt;next = list1;
+	return pMergedList;
+}
+
+ListNode* MergeKLists(ListNode** lists, int listsSize)
+{
+	if (NULL == lists || 0 &gt;= listsSize)
+	{
+		return NULL;
+	}
+
+	if (1 == listsSize) return lists[0];
+
+	int mid = listsSize / 2;
+	ListNode* pLeft = MergeKLists(lists, mid);
+	ListNode* pRight = MergeKLists(lists + mid, listsSize - mid);
+	return Merge(pLeft, pRight);
+}
+</code></pre>
+
+<h2 id="dynamic_program">动态规划</h2>
+
+<p>能采用动态规划求解的问题的一般要具有3个性质：</p>
+
+<ol>
+  <li>最优化原理：如果问题的最优解所包含的子问题的解也是最优的，就称该问题具有最优子结构，即满足最优化原理。</li>
+  <li>无后效性：即某阶段状态一旦确定，就不受这个状态以后决策的影响。也就是说，某状态以后的过程不会影响以前的状态，只与当前状态有关。</li>
+  <li>有重叠子问题：即子问题之间是不独立的，一个子问题在下一阶段决策中可能被多次使用到。（该性质并不是动态规划适用的必要条件，但是如果没有这条性质，动态规划算法同其他算法相比就不具备优势）。</li>
+</ol>
+
+<p>动态规划所处理的问题是一个多阶段决策问题，一般由初始状态开始，通过对中间阶段决策的选择，达到结束状态。这些决策形成了一个决策序列，同时确定了完成整个过程的一条活动路线(通常是求最优的活动路线)–初始状态→│决策１│→│决策２│→…→│决策ｎ│→结束状态：</p>
+
+<ol>
+  <li>划分阶段–按照问题的时间或空间特征，把问题分为若干个阶段。在划分阶段时，注意划分后的阶段一定要是有序的或者是可排序的，否则问题就无法求解；</li>
+  <li>确定状态和状态变量–将问题发展到各个阶段时所处于的各种客观情况用不同的状态表示出来。当然，状态的选择要满足无后效性；</li>
+  <li>确定决策并写出状态转移方程–因为决策和状态转移有着天然的联系，状态转移就是根据上一阶段的状态和决策来导出本阶段的状态。所以如果确定了决策，状态转移方程也就可写出。但事实上常常是反过来做，根据相邻两个阶段的状态之间的关系来确定决策方法和状态转移方程；</li>
+  <li>寻找边界条件–给出的状态转移方程是一个递推式，需要一个递推的终止条件或边界条件。</li>
+</ol>
+
+<p>实际应用中可以按以下几个简化的步骤进行设计：</p>
+
+<ol>
+  <li>分析最优解的性质，并刻画其结构特征；</li>
+  <li>递归的定义最优解；</li>
+  <li>以自底向上或自顶向下的记忆化方式（备忘录法）计算出最优值；</li>
+  <li>根据计算最优值时得到的信息，构造问题的最优解。</li>
+</ol>
+
+<p>动态规划考察方式就是做算法题，这里举出算法导论中一个例子–最长公共子序列，及其衍生–最长连续公共子序列：</p>
+
+<p>查看<a href="https://www.bilibili.com/video/av11928034/?p=15&amp;t=4230">算法导论公开课</a>，得到最长公共子序列的状态转移方程，然后编码，并输出所有最长公共子序列：</p>
+
+<pre><code class="language-C++">#include &lt;iostream&gt;
+#include &lt;ctime&gt;
+#include &lt;vector&gt;
+#include &lt;unordered_set&gt;
+#include &lt;algorithm&gt;
+
+#define MAX_NUM1 50
+#define MAX_NUM2 20
+
+using namespace std;
+
+// 为vector&lt;int&gt;创建hash函数
+// 必须在原模板定义所在的命名空间中特例化
+namespace std {
+
+	template &lt;&gt;
+	struct hash&lt;vector&lt;int&gt; &gt;
+	{
+		typedef size_t result_type;
+		typedef vector&lt;int&gt; argument_type;
+		size_t operator()(const vector&lt;int&gt;&amp; v) const;
+	};
+
+	// 重载的调用运算符必须为给定类型的对象定义一个哈希函数
+	// 对于一个给定值，任何时候调用此函数都应该返回相同的结果，对于不等的对象几乎总是产生不同的结果
+	size_t hash&lt;vector&lt;int&gt; &gt;::operator()(const vector&lt;int&gt;&amp; v) const
+	{
+		size_t ret = 0;
+		for (auto &amp;i : v) ret ^= hash&lt;int&gt;()(i);
+		return ret;
+	}
+}
+
+class noncopyable
+{
+protected:
+	noncopyable() = default;   // 默认构造函数不可访问
+	~noncopyable() = default;  // 移动操作不会合成，派生类也不会合成，不使用动态绑定
+
+	noncopyable(const noncopyable&amp;) = delete;
+	noncopyable&amp; operator=(const noncopyable&amp;) = delete;
+};
+
+class LCS :noncopyable
+{
+	const vector&lt;int&gt;&amp; arr1_; // 序列1
+	const vector&lt;int&gt;&amp; arr2_; // 序列2
+	vector&lt;vector&lt;int&gt; &gt; lcsMap_;        // lcs长度映射表
+	unordered_set&lt;vector&lt;int&gt; &gt; lcsArr_; // lcs集
+
+public:
+	LCS(const vector&lt;int&gt;&amp; arr1, const vector&lt;int&gt;&amp; arr2)
+		:arr1_(arr1),arr2_(arr2){}
+	// 获取所有lcs
+	unordered_set&lt;vector&lt;int&gt; &gt; GetAllLcs();
+	// 相关打印，便于观察
+	void PrintLcsMap();
+	void PrintLcsArr();
+
+protected:
+	void GenLcsMap();
+	void GenLcsArr(int i, int j, vector&lt;int&gt; lcs = {});
+};
+
+int main()
+{
+	vector&lt;int&gt; arr1(MAX_NUM1);
+	vector&lt;int&gt; arr2(MAX_NUM2);
+
+	// 创建随机数组
+	srand((unsigned)time(0));
+	for (auto&amp; i : arr1) i = rand() % 10;
+	for (auto&amp; i : arr2) i = rand() % 10;
+
+	// 查找最长公共子序列
+	LCS lcs(arr1, arr2);
+	lcs.GetAllLcs();
+	lcs.PrintLcsMap();
+	lcs.PrintLcsArr();
+
+	return 0;
+}
+
+unordered_set&lt;vector&lt;int&gt; &gt; LCS::GetAllLcs()
+{
+	if (arr1_.empty() || arr2_.empty()) return{};
+	GenLcsMap();
+	GenLcsArr(arr1_.size(),arr2_.size());
+	return lcsArr_;
+}
+
+// LCS(i,j) = 
+// (1) 0                                 （i=0, j=0）
+// (2) LCS(i - 1, j - 1) + 1             （Ai ＝ Bj）
+// (3) max(LCS(i – 1, j), LCS(i, j – 1)) （Ai ≠ Bj）
+void LCS::GenLcsMap()
+{
+	// 构造(m+1)*(n+1)二维数组
+	vector&lt;vector&lt;int&gt; &gt; lcsMap(arr1_.size() + 1);
+	lcsMap_.swap(lcsMap);
+	for (auto&amp; vec : lcsMap_)
+	{
+		vector&lt;int&gt; tmp(arr2_.size() + 1);
+		vec.swap(tmp);
+	}
+
+	// 生成lcs长度映射表
+	size_t i = 0, j = 0;
+	for (j = 0; j &lt;= arr2_.size(); ++j) lcsMap_[0][j] = 0;
+	for (i = 1; i &lt;= arr1_.size(); ++i)
+	{
+		lcsMap_[i][0] = 0;
+		for (j = 1; j &lt;= arr2_.size(); ++j)
+		{
+			// 减一是因为lcsmap_加了一行一列
+			if (arr1_[i - 1] == arr2_[j - 1]) lcsMap_[i][j] = lcsMap_[i - 1][j - 1] + 1;
+			else if(lcsMap_[i-1][j] &gt; lcsMap_[i][j-1]) lcsMap_[i][j] = lcsMap_[i - 1][j];
+			else lcsMap_[i][j] = lcsMap_[i][j-1];
+		}
+	}
+}
+
+void LCS::GenLcsArr(int i, int j, vector&lt;int&gt; lcs)
+{
+	while (i &gt; 0 &amp;&amp; j &gt; 0)
+	{
+		if (arr1_[i - 1] == arr2_[j - 1])
+		{
+			lcs.push_back(arr1_[i - 1]);
+			--i, --j;
+		}
+		else
+		{
+			if (lcsMap_[i - 1][j] &gt; lcsMap_[i][j - 1]) --i;
+			else if (lcsMap_[i - 1][j] &lt; lcsMap_[i][j - 1]) --j;
+			else if (lcsMap_[i - 1][j - 1] == lcsMap_[i][j])
+			{
+				if (i &gt; 3 &amp;&amp; lcsMap_[i - 2][j] == lcsMap_[i][j]) GenLcsArr(i - 2, j, lcs);
+				if (j &gt; 3 &amp;&amp; lcsMap_[i][j - 2] == lcsMap_[i][j]) GenLcsArr(i, j - 2, lcs);
+				--i, --j;
+			}
+			else
+			{
+				GenLcsArr(i - 1, j, lcs);
+				GenLcsArr(i, j - 1, lcs);
+				return;
+			}
+		}
+	}
+	reverse(lcs.begin(), lcs.end());
+	lcsArr_.insert(lcs);
+}
+
+void LCS::PrintLcsMap()
+{
+	size_t i = 0, j = 0;
+	cout &lt;&lt; "LcsMap:\n  ";
+	for (j = 0; j &lt; arr2_.size(); ++j) cout &lt;&lt; arr2_[j] &lt;&lt; " "; cout &lt;&lt; "\n";
+	for (i = 1; i &lt;= arr1_.size(); ++i)
+	{
+		cout &lt;&lt; arr1_[i - 1] &lt;&lt; " ";
+		for (j = 1; j &lt;= arr2_.size(); ++j) cout &lt;&lt; lcsMap_[i][j] &lt;&lt; " ";
+		cout &lt;&lt; "\n";
+	}
+}
+
+void LCS::PrintLcsArr()
+{
+	cout &lt;&lt; "lcs:\n";
+	for (auto&amp; vec : lcsArr_)
+	{
+		for (auto&amp; i : vec)
+			cout &lt;&lt; i &lt;&lt; " ";
+		cout &lt;&lt; "\n";
+	}
+}
+</code></pre>
+
+<p>最长连续公共子序列–将映射表中每项定义为以Xi,Yj结尾的最长连续公共子序列的长度，那么转移方程如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>C(i,j) = 
+(1) C(i - 1, j - 1) + 1 （Ai ＝ Bj）
+(2) 0                   （i=0, j=0, Ai ≠ Bj）
+</code></pre>
+</div>
+
+<p>以最长连续公共子序列的思想来考虑最长公共子序列，将映射表中每项定义为以Xi,Yj结尾的最长公共子序列的长度，那么转移方程如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>C(i,j) = 
+(1) 0  （Ai ≠ Bj）
+(2) max{C(0, 0)~C(0, j-1), C(1, 0)~C(1, j-1), ..., C(i-1, 0)~C(i-1, j-1)} + 1 （Ai ＝ Bj）
+</code></pre>
+</div>
+
+<p>子矩阵的最大值可以用一个长为最大列数的数组来保存，比较难的是如何回溯，得到所有结果。最长连续公共子序列只要找到最大值的位置就行了；而最长公共子序列则比较难，我思考再三，决定用hash表以长度为key，坐标为值来保存信息并回溯，这样可以不用保存m*n的映射矩阵，经测试，比第一种方法回溯来的快一点，当然第一种方法也许有其它更好的回溯方法：</p>
+
+<pre><code class="language-C++">#include &lt;iostream&gt;
+#include &lt;ctime&gt;
+#include &lt;vector&gt;
+#include &lt;unordered_set&gt;
+#include &lt;algorithm&gt;
+#include &lt;unordered_map&gt;
+
+#define MAX_NUM1 100
+#define MAX_NUM2 50
+
+using namespace std;
+
+// 为vector&lt;int&gt;创建hash函数
+// 必须在原模板定义所在的命名空间中特例化
+namespace std {
+
+	template &lt;&gt;
+	struct hash&lt;vector&lt;int&gt; &gt;
+	{
+		typedef size_t result_type;
+		typedef vector&lt;int&gt; argument_type;
+		size_t operator()(const vector&lt;int&gt;&amp; v) const;
+	};
+
+	// 重载的调用运算符必须为给定类型的对象定义一个哈希函数
+	// 对于一个给定值，任何时候调用此函数都应该返回相同的结果，对于不等的对象几乎总是产生不同的结果
+	size_t hash&lt;vector&lt;int&gt; &gt;::operator()(const vector&lt;int&gt;&amp; v) const
+	{
+		size_t ret = 0;
+		for (auto &amp;i : v) ret ^= hash&lt;int&gt;()(i);
+		return ret;
+	}
+}
+
+class noncopyable
+{
+protected:
+	noncopyable() = default;   // 默认构造函数不可访问
+	~noncopyable() = default;  // 移动操作不会合成，派生类也不会合成，不使用动态绑定
+
+	noncopyable(const noncopyable&amp;) = delete;
+	noncopyable&amp; operator=(const noncopyable&amp;) = delete;
+};
+
+class Base :noncopyable
+{
+protected:
+	const vector&lt;int&gt;&amp; arr1_; // 序列1
+	const vector&lt;int&gt;&amp; arr2_; // 序列2
+	vector&lt;vector&lt;int&gt; &gt; lengthMap_;        // 长度映射表
+	unordered_set&lt;vector&lt;int&gt; &gt; seqArr_; // 序列集
+
+	Base(const vector&lt;int&gt;&amp; arr1, const vector&lt;int&gt;&amp; arr2)
+		:arr1_(arr1), arr2_(arr2) {}
+
+	virtual void GenLengthMap() = 0;
+	virtual void GenSeqArr() = 0;
+
+public:
+	// 相关打印，便于观察
+	void PrintLengthMap();
+	void PrintSeqArr();
+};
+
+class LCS :public Base
+{
+public:
+	LCS(const vector&lt;int&gt;&amp; arr1, const vector&lt;int&gt;&amp; arr2)
+		:Base(arr1, arr2) {}
+
+	// 获取所有lcs
+	unordered_set&lt;vector&lt;int&gt; &gt; GetAllLcs();
+
+protected:
+	virtual void GenLengthMap() override;
+	virtual void GenSeqArr() override;
+	void GenSeqArr(int i, int j, vector&lt;int&gt; lcs = {});
+};
+
+class LCS2 :public Base
+{
+	int lcsLength;
+	// 保存lcs长度及坐标信息
+	unordered_multimap&lt;int, pair&lt;int, int&gt; &gt; hashMap_;
+public:
+	LCS2(const vector&lt;int&gt;&amp; arr1, const vector&lt;int&gt;&amp; arr2)
+		:Base(arr1, arr2), lcsLength(0) {}
+
+	// 获取所有lcs
+	unordered_set&lt;vector&lt;int&gt; &gt; GetAllLcs();
+
+protected:
+	virtual void GenLengthMap() override;
+	virtual void GenSeqArr() override;
+	void GenSeqArr(int i, int j, int l, vector&lt;int&gt; lcs = {});
+};
+
+// 连续子串
+class LCStr :public Base
+{
+	int lcstrLength;
+	// 保存lcstr长度及横坐标信息
+	unordered_multimap&lt;int, int&gt; hashMap_;
+public:
+	LCStr(const vector&lt;int&gt;&amp; arr1, const vector&lt;int&gt;&amp; arr2)
+		:Base(arr1, arr2), lcstrLength(0) {}
+
+	// 获取所有lcstr
+	unordered_set&lt;vector&lt;int&gt; &gt; GetAllLcstr();
+
+protected:
+	virtual void GenLengthMap() override;
+	virtual void GenSeqArr() override;
+};
+
+int main()
+{
+	vector&lt;int&gt; arr1(MAX_NUM1);
+	vector&lt;int&gt; arr2(MAX_NUM2);
+
+	// 创建随机数组
+	srand((unsigned)time(0));
+	for (auto&amp; i : arr1) i = rand() % 10;
+	for (auto&amp; i : arr2) i = rand() % 10;
+
+	// 查找最长公共子序列
+	LCS lcs(arr1, arr2);
+	lcs.GetAllLcs();
+	lcs.PrintLengthMap();
+	lcs.PrintSeqArr();
+
+	LCS2 lcs2(arr1, arr2);
+	lcs2.GetAllLcs();
+	lcs2.PrintLengthMap();
+	lcs2.PrintSeqArr();
+
+	// 查找最长连续公共子序列
+	LCStr lcstr(arr1, arr2);
+	lcstr.GetAllLcstr();
+	lcstr.PrintLengthMap();
+	lcstr.PrintSeqArr();
+
+	return 0;
+}
+
+void Base::PrintLengthMap()
+{
+	size_t i = 0, j = 0;
+	cout &lt;&lt; "LengthMap:\n  ";
+	for (j = 0; j &lt; arr2_.size(); ++j) cout &lt;&lt; arr2_[j] &lt;&lt; " "; cout &lt;&lt; "\n";
+	for (i = 1; i &lt;= arr1_.size(); ++i)
+	{
+		cout &lt;&lt; arr1_[i - 1] &lt;&lt; " ";
+		for (j = 1; j &lt;= arr2_.size(); ++j) cout &lt;&lt; lengthMap_[i][j] &lt;&lt; " ";
+		cout &lt;&lt; "\n";
+	}
+}
+
+void Base::PrintSeqArr()
+{
+	cout &lt;&lt; "seq:\n";
+	for (auto&amp; vec : seqArr_)
+	{
+		for (auto&amp; i : vec)
+			cout &lt;&lt; i &lt;&lt; " ";
+		cout &lt;&lt; "\n";
+	}
+}
+
+unordered_set&lt;vector&lt;int&gt; &gt; LCS::GetAllLcs()
+{
+	if (arr1_.empty() || arr2_.empty()) return{};
+	GenLengthMap();
+	GenSeqArr();
+	return seqArr_;
+}
+
+// LCS(i,j) = 
+// (1) 0                                 （i=0, j=0）
+// (2) LCS(i - 1, j - 1) + 1             （Ai ＝ Bj）
+// (3) max(LCS(i – 1, j), LCS(i, j – 1)) （Ai ≠ Bj）
+void LCS::GenLengthMap()
+{
+	// 构造(m+1)*(n+1)二维数组
+	vector&lt;vector&lt;int&gt; &gt; lcsMap(arr1_.size() + 1);
+	lengthMap_.swap(lcsMap);
+	for (auto&amp; vec : lengthMap_)
+	{
+		vector&lt;int&gt; tmp(arr2_.size() + 1);
+		vec.swap(tmp);
+	}
+
+	// 生成lcs长度映射表
+	size_t i = 0, j = 0;
+	for (j = 0; j &lt;= arr2_.size(); ++j) lengthMap_[0][j] = 0;
+	for (i = 1; i &lt;= arr1_.size(); ++i)
+	{
+		lengthMap_[i][0] = 0;
+		for (j = 1; j &lt;= arr2_.size(); ++j)
+		{
+			// 减一是因为lengthMap_加了一行一列
+			if (arr1_[i - 1] == arr2_[j - 1]) lengthMap_[i][j] = lengthMap_[i - 1][j - 1] + 1;
+			else if(lengthMap_[i-1][j] &gt; lengthMap_[i][j-1]) lengthMap_[i][j] = lengthMap_[i - 1][j];
+			else lengthMap_[i][j] = lengthMap_[i][j-1];
+		}
+	}
+}
+
+void LCS::GenSeqArr()
+{
+	GenSeqArr(arr1_.size(), arr2_.size());
+}
+
+void LCS::GenSeqArr(int i, int j, vector&lt;int&gt; lcs)
+{
+	while (i &gt; 0 &amp;&amp; j &gt; 0)
+	{
+		if (arr1_[i - 1] == arr2_[j - 1])
+		{
+			lcs.push_back(arr1_[i - 1]);
+			--i, --j;
+		}
+		else
+		{
+			if (lengthMap_[i - 1][j] &gt; lengthMap_[i][j - 1]) --i;
+			else if (lengthMap_[i - 1][j] &lt; lengthMap_[i][j - 1]) --j;
+			else if (lengthMap_[i - 1][j - 1] == lengthMap_[i][j])
+			{
+				if (i &gt; 3 &amp;&amp; lengthMap_[i - 2][j] == lengthMap_[i][j]) GenSeqArr(i - 2, j, lcs);
+				if (j &gt; 3 &amp;&amp; lengthMap_[i][j - 2] == lengthMap_[i][j]) GenSeqArr(i, j - 2, lcs);
+				--i, --j;
+			}
+			else
+			{
+				GenSeqArr(i - 1, j, lcs);
+				GenSeqArr(i, j - 1, lcs);
+				return;
+			}
+		}
+	}
+	reverse(lcs.begin(), lcs.end());
+	seqArr_.insert(lcs);
+}
+
+unordered_set&lt;vector&lt;int&gt; &gt; LCS2::GetAllLcs()
+{
+	if (arr1_.empty() || arr2_.empty()) return{};
+	GenLengthMap();
+	GenSeqArr();
+	return seqArr_;
+}
+
+// C(i,j) = 
+// (1) 0  （Ai ≠ Bj）
+// (2) max{C(0,0)~C(0,j-1),C(1,0)~C(1,j-1),...,C(i-1,0)~C(i-1,j-1)}+1 （Ai＝Bj）
+void LCS2::GenLengthMap()
+{
+	// 构造(m+1)*(n+1)二维数组
+	vector&lt;vector&lt;int&gt; &gt; lcsMap(arr1_.size() + 1);
+	lengthMap_.swap(lcsMap);
+	for (auto&amp; vec : lengthMap_)
+	{
+		vector&lt;int&gt; tmp(arr2_.size() + 1);
+		vec.swap(tmp);
+	}
+
+	// 创建临时数组，保存子矩阵最大长度
+	vector&lt;int&gt; tmp(arr2_.size(), 0);
+
+	// 生成lcs长度映射表
+	size_t i = 0, j = 0;
+	for (j = 0; j &lt;= arr2_.size(); ++j) lengthMap_[0][j] = 0;
+	for (i = 1; i &lt;= arr1_.size(); ++i)
+	{
+		lengthMap_[i][0] = 0;
+		for (j = 1; j &lt;= arr2_.size(); ++j)
+		{
+			// 更新子矩阵最大长度
+			tmp[j - 1] = max(tmp[j - 1], lengthMap_[i - 1][j - 1]);
+			// 减一是因为lengthMap_加了一行一列
+			if (arr1_[i - 1] != arr2_[j - 1]) lengthMap_[i][j] = 0;
+			else
+			{
+				// 注意max_elemant是前闭后开
+				int v = *max_element(tmp.begin(), tmp.begin() + j) + 1;
+				lengthMap_[i][j] = v;
+				lcsLength = max(v, lcsLength);
+				hashMap_.emplace(v, make_pair(i, j));
+			}
+		}
+	}
+}
+
+void LCS2::GenSeqArr()
+{
+	GenSeqArr(arr1_.size()+1, arr2_.size()+1,lcsLength);
+}
+
+void LCS2::GenSeqArr(int i, int j, int l, vector&lt;int&gt; lcs)
+{
+	if (0 == l &amp;&amp; !lcs.empty())
+	{
+		reverse(lcs.begin(), lcs.end());
+		seqArr_.insert(lcs);
+		return;
+	}
+	
+	auto iter_range = hashMap_.equal_range(l);
+	auto iter = iter_range.first;
+	lcs.push_back(0); // 随便添加一个值，循环修改这个值并递归
+	while (iter != iter_range.second)
+	{
+		if (iter-&gt;second.first &lt; i &amp;&amp; iter-&gt;second.second &lt; j)
+		{
+			lcs[lcs.size() - 1] = arr1_[iter-&gt;second.first - 1];
+			GenSeqArr(iter-&gt;second.first, iter-&gt;second.second, l - 1, lcs);
+		}
+		++iter;
+	}
+}
+
+// 获取所有lcstr
+unordered_set&lt;vector&lt;int&gt; &gt; LCStr::GetAllLcstr()
+{
+	if (arr1_.empty() || arr2_.empty()) return{};
+	GenLengthMap();
+	GenSeqArr();
+	return seqArr_;
+}
+// C(i, j) =
+// (1) C(i - 1, j - 1) + 1 （Ai ＝ Bj）
+// (2) 0                   （i = 0, j = 0, Ai ≠ Bj）
+void LCStr::GenLengthMap()
+{
+	// 构造(m+1)*(n+1)二维数组
+	vector&lt;vector&lt;int&gt; &gt; lcsMap(arr1_.size() + 1);
+	lengthMap_.swap(lcsMap);
+	for (auto&amp; vec : lengthMap_)
+	{
+		vector&lt;int&gt; tmp(arr2_.size() + 1);
+		vec.swap(tmp);
+	}
+
+	// 生成lcstr长度映射表
+	size_t i = 0, j = 0;
+	for (j = 0; j &lt;= arr2_.size(); ++j) lengthMap_[0][j] = 0;
+	for (i = 1; i &lt;= arr1_.size(); ++i)
+	{
+		lengthMap_[i][0] = 0;
+		for (j = 1; j &lt;= arr2_.size(); ++j)
+		{
+			if (arr1_[i - 1] != arr2_[j - 1]) lengthMap_[i][j] = 0;
+			else
+			{
+				lengthMap_[i][j] = lengthMap_[i - 1][j - 1] + 1;
+				lcstrLength = max(lcstrLength, lengthMap_[i][j]);
+				hashMap_.emplace(lengthMap_[i][j], i - lengthMap_[i][j]);
+			}
+		}
+	}
+}
+
+void LCStr::GenSeqArr()
+{
+	auto iter_range = hashMap_.equal_range(lcstrLength);
+	while (iter_range.first != iter_range.second)
+	{
+		auto iter = arr1_.begin() + iter_range.first-&gt;second;
+		seqArr_.emplace(iter, iter + lcstrLength);
+		++iter_range.first;
+	}
+}
+</code></pre>
+
+<p>在解决上述问题过程中查看资料、博客等，发现一道较为简单的题目–求序列中和最大的连续子序列：</p>
+
+<p>我们可以根据上面LCS的经验，定义Ci为以Xi结尾的和最大的连续子序列的长度，但是这样不太好提取转移方程，不妨定义为Xi结尾的连续子序列的最大和，这样转移方程就比较快提取了：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>C(i) = 
+(1) Xi          (i = 0 || C(i-1) &lt;= 0)
+(2) C(i-1) + Xi (others)
+</code></pre>
+</div>
+
+<pre><code class="language-C++">#include &lt;iostream&gt;
+#include &lt;ctime&gt;
+#include &lt;iomanip&gt;
+#include &lt;vector&gt;
+#include &lt;numeric&gt;
+#include &lt;algorithm&gt;
+#include &lt;unordered_set&gt;
+
+#define MAX_NUM 10
+
+using namespace std;
+
+// 为vector&lt;int&gt;创建hash函数
+// 必须在原模板定义所在的命名空间中特例化
+namespace std {
+
+	template &lt;&gt;
+	struct hash&lt;vector&lt;int&gt; &gt;
+	{
+		typedef size_t result_type;
+		typedef vector&lt;int&gt; argument_type;
+		size_t operator()(const vector&lt;int&gt;&amp; v) const;
+	};
+
+	// 重载的调用运算符必须为给定类型的对象定义一个哈希函数
+	// 对于一个给定值，任何时候调用此函数都应该返回相同的结果，对于不等的对象几乎总是产生不同的结果
+	size_t hash&lt;vector&lt;int&gt; &gt;::operator()(const vector&lt;int&gt;&amp; v) const
+	{
+		size_t ret = 0;
+		for (auto &amp;i : v) ret ^= hash&lt;int&gt;()(i);
+		return ret;
+	}
+}
+
+class noncopyable
+{
+protected:
+	noncopyable() = default;   // 默认构造函数不可访问
+	~noncopyable() = default;  // 移动操作不会合成，派生类也不会合成，不使用动态绑定
+
+	noncopyable(const noncopyable&amp;) = delete;
+	noncopyable&amp; operator=(const noncopyable&amp;) = delete;
+};
+
+class SubArrayWithGreatestSum :noncopyable
+{
+	const vector&lt;int&gt;&amp; arr_;
+	vector&lt;int&gt; map_;              // 连续子序列的最大和的映射表
+	unordered_set&lt;vector&lt;int&gt; &gt; subArrs_; // 和最大的连续子序列集
+public:
+	SubArrayWithGreatestSum(const vector&lt;int&gt;&amp; arr) :
+		arr_(arr) {}
+
+	unordered_set&lt;vector&lt;int&gt; &gt; GetAllSubArray();
+	// 相关打印，便于观察
+	void PrintMap();
+	void PrintSubArr();
+
+protected:
+	void GenMap();
+	void GenSubArrs();
+};
+
+int main()
+{
+	// 构造随机数组
+	vector&lt;int&gt; arr(MAX_NUM);
+	srand((unsigned)time(0));
+	for (auto&amp; i : arr) i = rand() % 20 - 10;
+
+	SubArrayWithGreatestSum sa(arr);
+	sa.GetAllSubArray();
+	sa.PrintMap();
+	sa.PrintSubArr();
+
+	getchar();
+	return 0;
+}
+
+unordered_set&lt;vector&lt;int&gt; &gt; SubArrayWithGreatestSum::GetAllSubArray()
+{
+	if (arr_.empty()) return{};
+	GenMap();
+	GenSubArrs();
+	return subArrs_;
+}
+
+//C(i) =
+//(1) Xi            (i = 0 || C(i - 1) &lt;= 0)
+//(2) C(i - 1) + Xi (others)
+void SubArrayWithGreatestSum::GenMap()
+{
+	vector&lt;int&gt; tmp(arr_.size(), 0);
+	map_.swap(tmp);
+
+	map_[0] = arr_[0];
+	for (size_t i = 1; i &lt; arr_.size(); ++i)
+	{
+		if (map_[i - 1] &lt;= 0) map_[i] = arr_[i];
+		else map_[i] = map_[i - 1] + arr_[i];
+	}
+}
+
+void SubArrayWithGreatestSum::GenSubArrs()
+{
+	int maxSum = *max_element(map_.begin(), map_.end());
+	int i = 0, j = 0;
+	for (i = 0; i &lt; map_.size(); ++i)
+	{
+		if (maxSum == map_[i])
+		{
+			int sum = 0;
+			vector&lt;int&gt; subArr;
+			for (j = i; j &gt;= 0; --j)
+			{
+				sum += arr_[j];
+				subArr.push_back(arr_[j]);
+				if (maxSum == sum) subArrs_.insert(subArr);
+			}
+		}
+	}
+}
+
+void SubArrayWithGreatestSum::PrintMap()
+{
+	cout &lt;&lt; "lengthMap: \n";
+	for (auto&amp; i : arr_) cout &lt;&lt; setw(3) &lt;&lt; i &lt;&lt; " "; cout &lt;&lt; "\n";
+	for (auto&amp; i : map_) cout &lt;&lt; setw(3) &lt;&lt; i &lt;&lt; " "; cout &lt;&lt; "\n";
+}
+
+void SubArrayWithGreatestSum::PrintSubArr()
+{
+	cout &lt;&lt; "subStr: \n";
+	for (auto&amp; v : subArrs_)
+	{
+		auto riter = v.rbegin();
+		while (riter != v.rend())
+		{
+			cout &lt;&lt; setw(3) &lt;&lt; *riter &lt;&lt; " ";
+			++riter;
+		}
+		cout &lt;&lt; "\n";
+	}
+}
+</code></pre>
+
+<h2 id="greedy_algorithm">贪婪算法</h2>
+
+<p>所谓贪心算法是指，在对问题求解时，总是做出在当前看来是最好的选择。也就是说，不从整体最优上加以考虑，他所做出的仅是在某种意义上的局部最优解。贪心算法没有固定的算法框架，算法设计的关键是贪心策略的选择。必须注意的是，贪心算法不是对所有问题都能得到整体最优解，选择的贪心策略必须具备无后效性，即某个状态以后的过程不会影响以前的状态，只与当前状态有关。所以对所采用的<strong>贪心策略一定要仔细分析其是否满足无后效性</strong>。</p>
+
+<p>一些经典的例题，如钱币找零等都比较简单。贪婪算法的考察方式一般也是算法题，这里举leetcode的<a href="https://leetcode.com/problems/jump-game/">跳跃游戏</a>来举例：</p>
+
+<p>按照动态规划的思想来考虑问–定义能够跳到终点的位置为好位置，那么转移方程如下：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>C(i) = 
+(1) 1 (i = end)
+(2) 1 ([i~(i+Xi)]存在好位置)
+(3) 0 (others)
+</code></pre>
+</div>
+
+<pre><code class="language-C++">class Solution {
+public:
+	bool canJump(vector&lt;int&gt;&amp; nums) {
+		if (nums.empty()) return false;
+
+		vector&lt;int&gt; tmp(nums.size(), 0); // 辅助数组
+		tmp[nums.size() - 1] = 1;
+		for (int i = nums.size() - 2; i &gt;= 0; --i)
+		{
+			// 不用判断j&lt;len，因为nums[len-1] = 1
+			for (int j = i + 1; j &lt;= i + nums[i]; ++j)
+			{
+				if (tmp[j])
+				{
+					tmp[i] = 1;
+					break;
+				}
+			}
+		}
+		return 1 == tmp[0];
+	}
+};
+</code></pre>
+
+<p>根据贪婪算法，每次只考虑最优策略–若当前位置能够跳的最远的地方比下一个好位置还远，那么一定是个好位置：</p>
+
+<pre><code class="language-C">class Solution {
+public:
+	bool canJump(vector&lt;int&gt;&amp; nums) {
+		if (nums.empty()) return false;
+
+		int lastGoodPos = nums.size() - 1;
+		for (int i = nums.size() - 2; i &gt;= 0; --i)
+		{
+			if (i + nums[i] &gt;= lastGoodPos)
+			{
+				lastGoodPos = i;
+			}
+		}
+		return 0 == lastGoodPos;
+	}
+};
+</code></pre>
+
+<p>我看了讨论区，还有进一步优化的方案：</p>
+
+<pre><code class="language-C++">class Solution {
+public:
+	bool canJump(vector&lt;int&gt;&amp; nums) {
+		if (nums.empty()) return false;
+
+		int longestPos = 0;
+		for (int i = 0; i &lt;= longestPos; ++i)
+		{
+			longestPos = max(longestPos, i + nums[i]);
+			if (longestPos &gt;= nums.size() - 1) return true;
+		}
+		return false;
+	}
+};
+</code></pre>
+
+<h2 id="others">其它</h2>
+
+<h4 id="section-1">哈夫曼编码</h4>
+
+<p><a href="https://www.cnblogs.com/wuyuankun/p/3982216.html">https://www.cnblogs.com/wuyuankun/p/3982216.html</a></p>
+
+<h4 id="section-2">二进制数中1的个数</h4>
+
+<p>n&amp;(n-1)</p>
+
+<h4 id="section-3">最小最大堆</h4>
+
+<p><a href="https://blog.csdn.net/chengde6896383/article/details/81121113">https://blog.csdn.net/chengde6896383/article/details/81121113</a></p>
+
+<h4 id="section-4">深度优先与广度优先</h4>
+
+<p><a href="https://www.jianshu.com/p/bff70b786bb6">https://www.jianshu.com/p/bff70b786bb6</a></p>
+
+
+
+                <hr>
+
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2019/05/30/shell-common-skills/" data-toggle="tooltip" data-placement="top" title="Shell 常用技能">
+                        Previous<br>
+                        <span>Shell 常用技能</span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+
+
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#Python" title="Python" rel="1">
+                                    Python
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Markdown" title="Markdown" rel="1">
+                                    Markdown
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++" title="C++" rel="9">
+                                    C++
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++ primer" title="C++ primer" rel="4">
+                                    C++ primer
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#thread" title="thread" rel="4">
+                                    thread
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Qt5" title="Qt5" rel="1">
+                                    Qt5
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#git" title="git" rel="1">
+                                    git
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#shell" title="shell" rel="1">
+                                    shell
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#algorithm" title="algorithm" rel="1">
+                                    algorithm
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="http://huangxuan.me">Hux Blog</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "blog-pengzhen";
+    var disqus_identifier = "/2019/06/26/common-data-structures-and-algorithms";
+    var disqus_url = "https://chorior.github.io/2019/06/26/common-data-structures-and-algorithms/";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                     
+                    <li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Chorior 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+<script src="/js/sw-registration.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-92626017-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+<!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0" /> -->
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

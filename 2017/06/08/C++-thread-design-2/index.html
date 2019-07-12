@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="学习使我快乐">
+    <meta name="keywords"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>C++ 多线程设计（二） - 彭侦的博客 | PengZhen's Blog</title>
+
+    <link rel="canonical" href="https://chorior.github.io/2017/06/08/C++-thread-design-2/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <!--<link href="http://cdn.staticfile.org/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">-->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">PengZhen's Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/about/">About</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/tags/">Tags</a>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    var __FishNav__ = {
+        close: function(){
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        },
+        open: function(){
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+
+    // Bind Event
+    $toggle.addEventListener('click', function(e){
+        if ($navbar.className.indexOf('in') > 0) {
+            __FishNav__.close()
+        }else{
+            __FishNav__.open()
+        }
+    })
+
+    /**
+     * Since Fastclick is used to delegate 'touchstart' globally
+     * to hack 300ms delay in iOS by performing a fake 'click',
+     * Using 'e.stopPropagation' to stop 'touchstart' event from 
+     * $toggle/$collapse will break global delegation.
+     * 
+     * Instead, we use a 'e.target' filter to prevent handler
+     * added to document close FishNav.  
+     *
+     * Also, we use 'click' instead of 'touchstart' as compromise
+     */
+    document.addEventListener('click', function(e){
+        if(e.target == $toggle) return;
+        if(e.target.className == 'icon-bar') return;
+        __FishNav__.close();
+    })
+</script>
+
+
+    <!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="/img/stock-photo-6.jpg" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        position: relative;
+        background-image: url('/img/stock-photo-6.jpg')
+    }
+
+    
+</style>
+<header class="intro-header" >
+    <div class="header-mask"></div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#C++" title="C++">C++</a>
+                        
+                        <a class="tag" href="/tags/#thread" title="thread">thread</a>
+                        
+                    </div>
+                    <h1>C++ 多线程设计（二）</h1>
+                    
+                    
+                    <h2 class="subheading">无锁并发数据结构设计</h2>
+                    
+                    <span class="meta">Posted by pengzhen on June 8, 2017</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+				<p>本文知识来自<a href="https://chenxiaowei.gitbooks.io/cpp_concurrency_in_action/content/">C++ Concurrency In Action</a>，介绍无锁数据结构的设计。<strong>介于个人理解能力有限，本文并不保证所有内容都是正确的，建议对照原文进行理解</strong>。</p>
+
+<h1 id="section">本文结构</h1>
+
+<ul>
+  <li><a href="#overview">无锁数据结构概述</a></li>
+  <li><a href="#the_c_plus_plus_memory_model_and_atomic_operations">C++ 内存模型和原子操作</a>
+    <ul>
+      <li><a href="#memory_model">内存模型</a></li>
+      <li><a href="#objects_memory_locations_and_concurrency">对象、存储区与并发</a></li>
+      <li><a href="#modification_order">修改顺序(modification order)</a></li>
+      <li><a href="#atomic_operations_and_types">原子操作与原子类型</a></li>
+      <li><a href="#std_atomic_flag">std::atomic_flag</a></li>
+      <li><a href="#std_atomic_bool">atomic_bool</a></li>
+      <li><a href="#std_atomic_pointer">atomic_pointer</a></li>
+      <li><a href="#standard_atomic_integral_type">标准整型原子类型</a></li>
+      <li><a href="#std_atomic_template">std::atomic 模板</a></li>
+      <li><a href="#nonmember_funtions_on_atomic_types">原子类型的非成员函数</a></li>
+      <li><a href="#synchronize_operations_and_enforce_order">同步操作与强制顺序</a></li>
+      <li><a href="#synchronize_with_and_happen_before">synchronizes-with,happen-before</a></li>
+      <li><a href="#memory_order_for_atomic_operations">原子操作内存顺序(memory order)</a></li>
+      <li><a href="#release_sequences_and_synchronize_with">release sequences and synchronize-with</a></li>
+      <li><a href="#fences">fences</a></li>
+    </ul>
+  </li>
+  <li><a href="#examples_of_lock_free_data_structures">无锁数据结构示例</a>
+    <ul>
+      <li><a href="#writing_a_thread_safe_stack_without_locks">Writing a thread-safe stack without locks</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="overview">无锁数据结构概述</h2>
+
+<p>mutex是确保多线程可以安全的访问数据，而没有条件竞争(race condition)和破坏的不变量(一个线程在写，另一个线程看到了在写过程中的状态)的强有力工具。使用它也是相对比较直接的：该段代码是否需要保护。当然它也不是没有缺点的，不正确的使用可能会导致死锁(dead lock)。如果你能写出能够安全并发且无锁的数据结构出来，那么潜在意义上就避免了这个问题，这样的数据结构称为“无锁数据结构”。</p>
+
+<p><strong>无锁数据结构的设计必须小心又小心，因为一些导致失败的条件可能很少发生</strong>。</p>
+
+<p>使用mutex、condition variable或future进行数据同步的算法或数据结构被称为阻塞式算法或数据结构，不使用阻塞式函数的算法或数据结构被称为非阻塞算法或数据结构。</p>
+
+<p><strong>并不是所有的非阻塞式数据结构都是无锁的</strong>。</p>
+
+<p><strong>如果一个数据结构被称为无锁的，那么多个线程一定可以并发的访问该数据结构</strong>。这些线程不需要做相同的操作，一个无锁的queue可能允许一个线程push，另一个线程pop，甚至在两个线程同时push时造成中断；不仅如此，当一个线程被调度器中途挂起时，另外的线程仍然可以继续完成它的操作而不用等待这个被挂起的线程。</p>
+
+<p>compare/exchange操作经常被用在循环里面，之所以用compare/exchange操作是因为其它线程可能同时对数据做了更改，因此需要在重新调用compare/exchange操作前重新做一系列操作，这样的代码在那些修改数据的线程被挂起并操作成功时也可以是无锁的，否则就是非阻塞但非无锁的。具有这种循环的无锁算法可能导致一个线程遭受饥饿：如果另一个线程使用“错误”时序执行操作，则另一个线程可能会在第一个线程不断重试其操作时进行。避免这种问题的数据结构是无等待的，也是无锁的。</p>
+
+<blockquote>
+  <p>Lock-free algorithms with such loops can result in one thread being subject to starvation. If another thread performs operations with the “wrong” timing, the other thread might make progress while the first thread continually has to retry its operation. Data structures that avoid this problem are wait-free as well as lock-free.</p>
+</blockquote>
+
+<p><strong>无等待数据结构是一个无锁的数据结构，其附加属性是访问数据结构的每个线程都可以在有限数量的步骤中完成其操作，而不管其他线程的行为如何</strong>，因为与其他线程冲突而涉及无限次重试的算法因此不会等待。正确书写无等待数据结构时非常非常困难的：<strong>为了确保每个线程都能在有限数量的步骤中完成其操作，你必须确保每个操作都可以在单次执行中执行，并且一个线程执行的步骤不会导致另一个线程上的操作失败</strong>。</p>
+
+<p>由于正确的获得一个无锁或无等待的数据结构的困难性，你<strong>必须确保得到的好处超过了成本</strong>：</p>
+
+<ul>
+  <li>使用无锁数据结构的最主要原因是获得最大的并发性能，<strong>使用无锁数据结构时，每个线程都能向前进而不管其它线程在做什么，也不需要等待</strong>，这样的功能谁都想要，但是却很难实现；</li>
+  <li>使用无锁数据结构的第二个原因是鲁棒性(robustness)，如果一个线程在持有锁时被销毁，那么这个数据结构就永远损坏了，但如果使用的是无锁数据结构，那么损坏的就只有那个线程的数据了，其他线程可以正常运行；</li>
+  <li>如果你不能排除其它线程访问数据结构，那么你就要小心维护不变量，<strong>为了避免条件竞争(race condition)，你必须使用原子操作来修改数据</strong>，除此之外，你还必须确保修改以正确的顺序显示给其它线程；</li>
+  <li>因为没有锁，所以<strong>无锁数据结构不会造成dead lock，但是可能造成live lock</strong>：想象当两个线程都想要修改数据，但是任何一个线程所做的操作都会导致另一个线程的操作重新执行，所以两个线程会一直循环尝试。就像两个人同时从两边过一个独木桥，必须要一方通过之后，另一方才能继续通过。就定义上来讲，无等待数据结构是不会造成live lock的，因为它们执行操作的步骤总是有上限的，但换个角度讲，无等待算法要比等待算法复杂度高，且就算没有其它线程访问数据也会需要更多的步骤来完成对应操作。</li>
+  <li><strong>尽管无锁或无等待数据结构可以增加并发操作的潜力，并减少线程花费等待的时间，但它可能会降低整体性能。因为原子操作可能比非原子操作慢得多，并且无锁数据结构的操作相对于使用锁的数据结构的操作要更多；不仅如此，硬件必须在访问相同原子变量的线程之间同步数据</strong>。</li>
+</ul>
+
+<p><strong>在介绍无锁数据结构设计之前，我们需要一些C++内存模型和原子操作的知识</strong>。</p>
+
+<h2 id="the_c_plus_plus_memory_model_and_atomic_operations">C++ 内存模型和原子操作</h2>
+
+<h3 id="memory_model">内存模型</h3>
+
+<p><strong>C++ 程序中的所有数据都是由对象(object)构成，C++ 标准定义一个对象(object)为“存储区(memory location)”</strong>。</p>
+
+<p>像int、float这样的对象(object)是简单基本类型；像array、自定义类型的对象会拥有子对象(数据成员)。<strong>不管一个对象是什么类型，它都会被存储在一个或多个存储区(memory location)里</strong>，每个存储区(memory location)里面存放着一个对象或子对象，如<code class="highlighter-rouge">unsigned short</code>或<code class="highlighter-rouge">my_class*</code>或相邻位位域(bit field)序列。</p>
+
+<p>如果你使用位域(bit field)，那么有一个重要的点你需要注意：<strong>虽然相邻位域都是不同的对象，它们仍被视为相同的存储区(memory location)</strong>。</p>
+
+<h3 id="objects_memory_locations_and_concurrency">对象、存储区与并发</h3>
+
+<p><strong>C++ 多线程应用程序的关键部分：一切都取决于存储区(everything hinges on those memory locations)</strong>。</p>
+
+<p>如果两个线程访问分离(separate)的存储区，一切都会工作的很好(everything works fine)；如果两个线程访问相同(same)的存储区，你就要小心了：如果没有线程更新这个存储区(只读)，那么没有问题；但如果两个线程都在修改数据，就会有条件竞争(race condition)的危险。</p>
+
+<p><strong>为了避免条件竞争(race condition)，两个线程不得不按一定的顺序访问存储区</strong>，一种确保访问顺序的方法是使用<code class="highlighter-rouge">std::mutex</code>，另一种方法就是使用原子操作(atomic operation)。</p>
+
+<p>如果两个线程没有按顺序访问相同的存储区，那么这两个访问中的一个或两个就不是原子(atomic)的，这会造成未定义行为(undefined behavior)。</p>
+
+<p><strong>原子操作并没有避免竞争本身，哪个原子操作先访问存储区仍然没有被指定，但是它将程序拉回了定义行为的区域内</strong>。</p>
+
+<h3 id="modification_order">修改顺序(modification order)</h3>
+
+<p><strong>一个C++ 程序中的每个对象从初始化开始，就拥有一个定义的修改顺序(modification order)，用来限定程序中的所有线程对该对象的修改操作(Every object in a C++ program has a defined modification order composed of all the writes to that object from all threads in the program, starting with the object’s initialization)</strong>。</p>
+
+<p><strong>大多数情况下，这个修改顺序(modification order)在运行时会有所变化，但是在程序已经执行的情况下，所有线程都必须遵守这个顺序</strong>。如果一个对象不是原子类型(atomic type)，你就要负责充分的同步，用于确保所有线程都遵守了每个变量的修改顺序(modification order)，否则就会出现数据竞争(data race)和未定义行为(undefined behavior)；如果该对象是原子类型，那么编译器就会帮你确保必要的同步。</p>
+
+<p><strong>虽然所有线程必须遵守每个对象的修改顺序，但是它们并没有必要遵守不同对象的相对顺序(Although all threads must agree on the modification orders of each individual object in a program, they don’t necessarily have to agree on the relative order of operations on separate objects)</strong>。</p>
+
+<h3 id="atomic_operations_and_types">原子操作与原子类型</h3>
+
+<p>顾名思义，<strong>一个原子操作(atomic operation)是一个不可分割(indivisible)的操作</strong>。</p>
+
+<p>一个原子操作的结果要么未完成，要么已完成(Y/N)，你不能在一个原子操作进行一半的时候进行查看。如果对一个对象读值的操作是原子的，那么所有对该对象的修改操作都是原子的，因为读到的值要么是初始值，要么是已修改后的值。</p>
+
+<p>这意味着<strong>一个非原子操作在进行一半的时候可能被另一个线程看到了，这就很大概率造成数据竞争(data race)和未定义行为(undefined behavior)</strong>。</p>
+
+<p><strong>在 C++ 里面，大多数情况下，你需要用一个原子类型去获取一个原子操作</strong>。</p>
+
+<p><strong>标准原子类型定义于头文件<code class="highlighter-rouge">&lt;atomic&gt;</code>中，对标准原子类型的所有操作都是原子的，且在C++定义中只有对标准原子类型的操作是原子的，虽然你可以使用<code class="highlighter-rouge">std::mutex</code>来达到原子操作的效果</strong>。</p>
+
+<p><strong>原子类型没有拷贝操作</strong>，几乎所有的原子类型都有一个成员函数<code class="highlighter-rouge">is_lock_free()</code></p>
+
+<ul>
+  <li>如果该函数返回true，那么对该类型的操作直接以原子指令完成；</li>
+  <li>如果该函数返回false，那么对该类型的操作以使用对编译器和库的内部锁的形式完成。</li>
+</ul>
+
+<p><strong>唯一不提供<code class="highlighter-rouge">is_lock_free()</code>成员函数的类型是<code class="highlighter-rouge">std::atomic_flag</code></strong>。这个类型是一个简单的布尔标志，<strong>该类型一定是无锁的(lock free)</strong>。剩下的原子类型全部都是模板<code class="highlighter-rouge">std::atomic&lt;&gt;</code>的特例化版本，它们比<code class="highlighter-rouge">std::atomic_flag</code>拥有更多的功能，但是可能不是无锁的(lock free)。</p>
+
+<p>头文件<code class="highlighter-rouge">&lt;atomic&gt;</code>中定义了很多<code class="highlighter-rouge">std::atomic&lt;&gt;</code>模板特例化的别名(但是通常直接使用模板会比较方便)，命名的格式很简单：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// ATOMIC TYPEDEFS
+</span><span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">atomic_bool</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span> <span class="n">atomic_char</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">signed</span> <span class="kt">char</span><span class="o">&gt;</span> <span class="n">atomic_schar</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">&gt;</span> <span class="n">atomic_uchar</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">short</span><span class="o">&gt;</span> <span class="n">atomic_short</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">short</span><span class="o">&gt;</span> <span class="n">atomic_ushort</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">atomic_int</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">atomic_uint</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">long</span><span class="o">&gt;</span> <span class="n">atomic_long</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="o">&gt;</span> <span class="n">atomic_ulong</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">long</span> <span class="kt">long</span><span class="o">&gt;</span> <span class="n">atomic_llong</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span><span class="o">&gt;</span> <span class="n">atomic_ullong</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">char16_t</span><span class="o">&gt;</span> <span class="n">atomic_char16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">char32_t</span><span class="o">&gt;</span> <span class="n">atomic_char32_t</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">wchar_t</span><span class="o">&gt;</span> <span class="n">atomic_wchar_t</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int8_t</span><span class="o">&gt;</span> <span class="n">atomic_int8_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span> <span class="n">atomic_uint8_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int16_t</span><span class="o">&gt;</span> <span class="n">atomic_int16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span> <span class="n">atomic_uint16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span> <span class="n">atomic_int32_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span> <span class="n">atomic_uint32_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">atomic_int64_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span> <span class="n">atomic_uint64_t</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_least8_t</span><span class="o">&gt;</span> <span class="n">atomic_int_least8_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_least8_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_least8_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_least16_t</span><span class="o">&gt;</span> <span class="n">atomic_int_least16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_least16_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_least16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_least32_t</span><span class="o">&gt;</span> <span class="n">atomic_int_least32_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_least32_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_least32_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_least64_t</span><span class="o">&gt;</span> <span class="n">atomic_int_least64_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_least64_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_least64_t</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_fast8_t</span><span class="o">&gt;</span> <span class="n">atomic_int_fast8_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_fast8_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_fast8_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_fast16_t</span><span class="o">&gt;</span> <span class="n">atomic_int_fast16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_fast16_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_fast16_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_fast32_t</span><span class="o">&gt;</span> <span class="n">atomic_int_fast32_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_fast32_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_fast32_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int_fast64_t</span><span class="o">&gt;</span> <span class="n">atomic_int_fast64_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint_fast64_t</span><span class="o">&gt;</span> <span class="n">atomic_uint_fast64_t</span><span class="p">;</span>
+
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">intptr_t</span><span class="o">&gt;</span> <span class="n">atomic_intptr_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uintptr_t</span><span class="o">&gt;</span> <span class="n">atomic_uintptr_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">atomic_size_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">ptrdiff_t</span><span class="o">&gt;</span> <span class="n">atomic_ptrdiff_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">intmax_t</span><span class="o">&gt;</span> <span class="n">atomic_intmax_t</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uintmax_t</span><span class="o">&gt;</span> <span class="n">atomic_uintmax_t</span><span class="p">;</span>
+</code></pre>
+</div>
+
+<p>你也可以使用自己的类型来特例化<a href="#std_atomic_template"><code class="highlighter-rouge">std::atomic&lt;&gt;</code>模板</a>。</p>
+
+<p><strong>每种原子类型的操作都有一个可选的内存顺序(memory order)参数，根据操作的类别，每种操作能使用的参数不尽相同，但所有操作的默认参数都是<code class="highlighter-rouge">memory_order_seq_cst</code>，这些参数的意义会在<a href="#memory_order_for_atomic_operations">后面</a>进行讲解：</strong></p>
+
+<ul>
+  <li>储存操作(store operation)：<code class="highlighter-rouge">memory_order_relaxed</code>, <code class="highlighter-rouge">memory_order_release</code>, <code class="highlighter-rouge">memory_order_seq_cst</code>；</li>
+  <li>加载操作(load  operation)：<code class="highlighter-rouge">memory_order_relaxed</code>, <code class="highlighter-rouge">memory_order_consume</code>, <code class="highlighter-rouge">memory_order_acquire</code>, <code class="highlighter-rouge">memory_order_seq_cst</code>；</li>
+  <li>读改写操作(read-modify-write)：<code class="highlighter-rouge">memory_order_relaxed</code>, <code class="highlighter-rouge">memory_order_consume</code>, <code class="highlighter-rouge">memory_order_acquire</code>, <code class="highlighter-rouge">memory_order_release</code>, <code class="highlighter-rouge">memory_order_acq_rel</code>, <code class="highlighter-rouge">memory_order_seq_cst</code>。</li>
+</ul>
+
+<h3 id="std_atomic_flag">std::atomic_flag</h3>
+
+<p><strong><code class="highlighter-rouge">std::atomic_flag</code>是最简单的标准原子类型，它表示一个bool flag</strong>。</p>
+
+<p><strong><code class="highlighter-rouge">std::atomic_flag</code>的对象只有两种状态：set、clear</strong>。<strong>这种类型几乎从没被使用过</strong>，除非在十分特别的情况下，但是它会展示一些原子类型的通用策略。</p>
+
+<p><strong><code class="highlighter-rouge">std::atomic_flag</code>对象必须以<code class="highlighter-rouge">ATOMIC_FLAG_INIT</code>初始化，该初始化使得其状态设置为clear</strong>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">atomic_flag</span> <span class="n">f</span> <span class="o">=</span> <span class="n">ATOMIC_FLAG_INIT</span><span class="p">;</span>
+</code></pre>
+</div>
+
+<p><strong><code class="highlighter-rouge">std::atomic_flag</code>是唯一需要以如此特别的方式初始化的原子类型，但它也是唯一保证无锁(lock free)的类型</strong>。</p>
+
+<p>如果一个<code class="highlighter-rouge">std::atomic_flag</code>对象拥有静态存储期，那么它保证会被静态初始化，这意味着没有初始化顺序问题–对该对象的第一次操作会将其初始化。</p>
+
+<p><strong>一旦一个<code class="highlighter-rouge">std::atomic_flag</code>对象被初始化了，你只能对其做三件事：destroy、clear、set并查询前一个值</strong>，分别使用析构函数、<code class="highlighter-rouge">clear()</code>成员函数、<code class="highlighter-rouge">test_and_set()</code>成员函数。其中<code class="highlighter-rouge">clear()</code>是一个存储操作(store operation)，<code class="highlighter-rouge">test_and_set()</code>是一个读改写操作(read-modify-write)。</p>
+
+<p><strong>同时对两个不同的对象进行的操作不可能是原子的</strong>，因为先要对一个对象进行操作，再对另一个对象进行操作，这样中间状态就可能被看到，所以原子操作都删除了拷贝操作(包括拷贝构造函数和拷贝赋值运算符)。</p>
+
+<p>有限的特性使得<code class="highlighter-rouge">std::atomic_flag</code>非常适合用来做spinlock mutex(一种死等的锁机制)，下面的实现是无阻塞但非无锁的，因为使用无锁数据结构时，每个线程都能向前进而不管其它线程在做什么，也不需要等待，很明显这里等待了：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用std::atomic_flag的spinlock mutex实现
+</span><span class="k">class</span> <span class="nc">spinlock</span><span class="n">_mutex</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic_flag</span> <span class="n">flag</span><span class="p">;</span>
+<span class="k">public</span><span class="o">:</span>
+	<span class="n">spinlock_mutex</span><span class="p">()</span> <span class="o">:</span>
+		<span class="n">flag</span><span class="p">{</span> <span class="n">ATOMIC_FLAG_INIT</span> <span class="p">}</span>
+	<span class="p">{}</span>
+	<span class="kt">void</span> <span class="n">lock</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="c1">// test_and_set: 将状态设置为set，即flag设置为true，返回前一个值
+</span>		<span class="c1">// 如果flag是clear状态，那么循环终止
+</span>		<span class="c1">// 如果flag是set状态，即该对象已经被lock了，就一直循环等待unlock
+</span>		<span class="k">while</span> <span class="p">(</span><span class="n">flag</span><span class="p">.</span><span class="n">test_and_set</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="p">}</span>
+	<span class="kt">void</span> <span class="n">unlock</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">flag</span><span class="p">.</span><span class="n">clear</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<h3 id="std_atomic_bool">atomic_bool</h3>
+
+<p>由于<code class="highlighter-rouge">std::atomic_flag</code>没有无修改查询操作，所以它甚至都不能当做一个通用的布尔标志来使用。</p>
+
+<p>最基本的原子整形类型是<code class="highlighter-rouge">std::atomic&lt;bool&gt;</code>，它比<code class="highlighter-rouge">std::atomic_flag</code>拥有更多的特性，虽然它仍然没有拷贝操作，但是它<strong>可以使用非原子类型bool变量构造或赋值</strong>：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="n">b</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</code></pre>
+</div>
+
+<p>查看<code class="highlighter-rouge">std::atomic&lt;&gt;</code>模板的源代码：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">_ITYPE</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">_ITYPE</span> <span class="n">_Val</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+<span class="p">{</span>	<span class="c1">// assign from _Val
+</span><span class="k">return</span> <span class="p">(</span><span class="n">_ATOMIC_ITYPE</span><span class="o">::</span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">_Val</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>发现其赋值运算符与常规的赋值运算符不太一样，常规的赋值运算符返回的都是引用，但是<code class="highlighter-rouge">std::atomic&lt;&gt;</code>模板的赋值运算符返回的却是一个值。<strong>如果返回的是一个引用，那么任何依赖赋值结果的代码就不得不在做一次获取值的操作，这样就可能获取到其它线程修改后的值，通过直接返回存储的非原子类型值，就可以避免这次获取值的操作</strong>。</p>
+
+<p>与<code class="highlighter-rouge">std::atomic_flag</code>不同，<code class="highlighter-rouge">std::atomic&lt;bool&gt;</code>通过<code class="highlighter-rouge">store()</code>成员函数来写值，并且可以设置为true or false；通过<code class="highlighter-rouge">exchange()</code>来设置新值并返回前一个值；并且提供一个无修改查询函数<code class="highlighter-rouge">load()</code>，用以将对象隐式的转换为一个普通的bool值：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">;</span>
+<span class="n">bool</span> <span class="n">x</span> <span class="o">=</span> <span class="n">b</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">);</span>
+<span class="n">b</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">b</span><span class="p">.</span><span class="n">exchange</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_acq_rel</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p>一个新的操作叫做“比较/交换”(compare/exchange)，它以成员函数<code class="highlighter-rouge">compare_exchange_weak()</code>和<code class="highlighter-rouge">compare_exchange_strong()</code>的形式表现出来。<strong>“比较/交换”(compare/exchange)操作是原子类型编程的基石，若期望值与实际值相等，则存储提供的值；若不等，则期望值将被更新为实际值</strong>。</p>
+
+<p>“比较/交换”(compare/exchange)操作的返回值是一个bool值，若期望值与实际值相等则返回true，否则返回false。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">bool</span> <span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">_Ty</span><span class="o">&amp;</span> <span class="n">_Exp</span><span class="p">,</span> <span class="n">_Ty</span> <span class="n">_Value</span><span class="p">,</span>
+	<span class="n">memory_order</span> <span class="n">_Order1</span><span class="p">,</span> <span class="n">memory_order</span> <span class="n">_Order2</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// compare and exchange value stored in *this with *_Exp, _Value
+</span>	<span class="k">return</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">_Compare_exchange_weak</span><span class="p">(</span>
+		<span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_STD</span> <span class="n">addressof</span><span class="p">(</span><span class="n">_My_val</span><span class="p">),</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_STD</span> <span class="n">addressof</span><span class="p">(</span><span class="n">_Exp</span><span class="p">),</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_STD</span> <span class="n">addressof</span><span class="p">(</span><span class="n">_Value</span><span class="p">),</span>
+			<span class="n">_Order1</span><span class="p">,</span> <span class="n">_Order2</span><span class="p">));</span>
+	<span class="p">}</span>
+<span class="n">bool</span> <span class="n">_Compare_exchange_weak</span><span class="p">(</span>
+	<span class="kt">void</span> <span class="o">*</span><span class="n">_Tgt</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">_Exp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">_Value</span><span class="p">,</span>
+	<span class="n">memory_order</span> <span class="n">_Order1</span><span class="p">,</span> <span class="n">memory_order</span> <span class="n">_Order2</span><span class="p">)</span> <span class="k">volatile</span>
+	<span class="p">{</span>	<span class="c1">// lock and compare/exchange
+</span>	<span class="k">return</span> <span class="p">(</span><span class="n">_Atomic_compare_exchange_weak</span><span class="p">(</span>
+		<span class="o">&amp;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">_Bytes</span><span class="p">,</span> <span class="n">_Tgt</span><span class="p">,</span> <span class="n">_Exp</span><span class="p">,</span> <span class="n">_Value</span><span class="p">,</span> <span class="n">_Order1</span><span class="p">,</span> <span class="n">_Order2</span><span class="p">));</span>
+	<span class="p">}</span>
+<span class="kr">inline</span> <span class="kt">int</span> <span class="n">_Atomic_compare_exchange_weak</span><span class="p">(</span>
+	<span class="k">volatile</span> <span class="n">_Atomic_flag_t</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">_Size</span><span class="p">,</span>
+		<span class="k">volatile</span> <span class="kt">void</span> <span class="o">*</span><span class="n">_Tgt</span><span class="p">,</span> <span class="k">volatile</span> <span class="kt">void</span> <span class="o">*</span><span class="n">_Exp</span><span class="p">,</span> <span class="k">const</span> <span class="k">volatile</span> <span class="kt">void</span> <span class="o">*</span><span class="n">_Src</span><span class="p">,</span>
+			<span class="n">memory_order</span><span class="p">,</span> <span class="n">memory_order</span><span class="p">)</span>
+	<span class="p">{</span>	<span class="cm">/* atomically compare and exchange with memory ordering */</span>
+	<span class="kt">int</span> <span class="n">_Result</span><span class="p">;</span>
+
+	<span class="n">_Lock_spin_lock</span><span class="p">(</span><span class="n">_Flag</span><span class="p">);</span>
+	<span class="n">_Result</span> <span class="o">=</span> <span class="n">_CSTD</span> <span class="n">memcmp</span><span class="p">((</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_Tgt</span><span class="p">,</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_Exp</span><span class="p">,</span> <span class="n">_Size</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">_Result</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+		<span class="n">_CSTD</span> <span class="n">memcpy</span><span class="p">((</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_Tgt</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_Src</span><span class="p">,</span> <span class="n">_Size</span><span class="p">);</span>
+	<span class="k">else</span>
+		<span class="n">_CSTD</span> <span class="n">memcpy</span><span class="p">((</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_Exp</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">_Tgt</span><span class="p">,</span> <span class="n">_Size</span><span class="p">);</span>
+	<span class="n">_Unlock_spin_lock</span><span class="p">(</span><span class="n">_Flag</span><span class="p">);</span>
+	<span class="k">return</span> <span class="p">(</span><span class="n">_Result</span><span class="p">);</span>
+	<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong><code class="highlighter-rouge">compare_exchange_weak()</code>的存储操作即使在期望值与实际值相等的情况下也可能不会成功</strong>，这使得实际值并没有改变，返回值也是false，这可能发生在缺少“比较/交换”(compare/exchange)指令的机器上。如果处理器不能保证该操作是原子的，就可能发生这种情况，这被称为伪失败(spurious failure)，因为失败的原因不是变量的值。</p>
+
+<p>由于<code class="highlighter-rouge">compare_exchange_weak()</code>可能发生伪失败(spurious failure)，所以它通常被用在一个循环中：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">bool</span> <span class="n">expected</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="k">extern</span> <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">;</span> <span class="c1">// set somewhere else
+// 当发生伪失败时，就会继续循环，否则会退出循环
+</span><span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">b</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="nb">true</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">expected</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p><strong><code class="highlighter-rouge">compare_exchange_strong()</code>保证只有当期望值与实际值不等的情况下才返回false</strong>，这就可以消除上面的循环。</p>
+
+<p><strong>如果存储的值比较简单，那么使用<code class="highlighter-rouge">compare_exchange_weak()</code>，否则使用<code class="highlighter-rouge">compare_exchange_strong()</code></strong>。</p>
+
+<p>“比较/交换”(compare/exchange)操作接受两个内存顺序(memory order)参数，对应成功和失败两种情况。<strong>禁止提供<code class="highlighter-rouge">memeory_order_release</code>和<code class="highlighter-rouge">memory_order_acq_rel</code>给失败的情况；如果你想提供<code class="highlighter-rouge">memory_order_acquire</code>或<code class="highlighter-rouge">memory_order_seq_cst</code>给失败情况，那么你必须也提供给成功的情况</strong>。</p>
+
+<p><strong>如果你没有指定顺序给失败的情况，那么失败的顺序跟成功的顺序一样，除了release部分：<code class="highlighter-rouge">memory_order_release</code>会变成<code class="highlighter-rouge">memory_order_relaxed</code>，<code class="highlighter-rouge">memory_order_acq_rel</code>会变成<code class="highlighter-rouge">memory_order_acquire</code>。如果你两个都没有指定，那么默认为<code class="highlighter-rouge">memory_order_seq_cst</code></strong>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">;</span>
+<span class="n">bool</span> <span class="n">expected</span><span class="p">;</span>
+<span class="n">b</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="nb">true</span><span class="p">,</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">memory_order_acq_rel</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">);</span>
+<span class="c1">// 跟上面等价
+</span><span class="n">b</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_acq_rel</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">std::atomic&lt;bool&gt;</code>与<code class="highlighter-rouge">std::atomic_flag</code>的另一个不同是：<code class="highlighter-rouge">std::atomic&lt;bool&gt;</code>可能不是无锁的(lock free)，其实现可能需要一个内部互斥锁，如上面查找的源码所示。你可以使用<code class="highlighter-rouge">is_lock_free()</code>成员函数来确认是否是lock free的。</p>
+
+<h3 id="std_atomic_pointer">atomic_pointer</h3>
+
+<p>指针的原子形式是<code class="highlighter-rouge">std::atomic&lt;T*&gt;</code>，其接口与一般的原子类型基本相同，但它<strong>提供指针算数运算</strong>。基本操作有<code class="highlighter-rouge">fetch_add()</code>和<code class="highlighter-rouge">fetch_sub()</code>，它们在存储的地址上做原子加减法并返回原值；另外还有运算符<code class="highlighter-rouge">+=,-=,++,--</code>，运算符不能提供内存顺序(memory order)，它们总是使用<code class="highlighter-rouge">memory_order_seq_cst</code>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Foo</span> <span class="p">{};</span>
+<span class="n">Foo</span> <span class="n">some_array</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">Foo</span><span class="o">*&gt;</span> <span class="n">p</span><span class="p">(</span><span class="n">some_array</span><span class="p">);</span>
+<span class="n">Foo</span><span class="o">*</span> <span class="n">x</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">fetch_add</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">x</span> <span class="o">==</span> <span class="n">some_array</span><span class="p">);</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">==</span> <span class="o">&amp;</span><span class="n">some_array</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span>
+<span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">);</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">x</span> <span class="o">==</span> <span class="o">&amp;</span><span class="n">some_array</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">==</span> <span class="o">&amp;</span><span class="n">some_array</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</code></pre>
+</div>
+
+<h3 id="standard_atomic_integral_type">标准整型原子类型</h3>
+
+<p>标准整型原子类型如<code class="highlighter-rouge">std::atomic&lt;int&gt;</code>或<code class="highlighter-rouge">std::atomic&lt;unsigned long long&gt;</code>拥有相当全面的操作可供使用：<code class="highlighter-rouge">fetch_add()</code>, <code class="highlighter-rouge">fetch_sub()</code>, <code class="highlighter-rouge">fetch_and()</code>, <code class="highlighter-rouge">fetch_or()</code>, <code class="highlighter-rouge">fetch_xor()</code>, <code class="highlighter-rouge">+=,-=,&amp;=,|=,^=,++,--</code>，只有乘除、位移操作没有被支持。</p>
+
+<h3 id="std_atomic_template">std::atomic 模板</h3>
+
+<p>std::atomic 模板的存在使得用户可以创建自己的原子类型。要想创建自己的原子类型，<strong>自定义类不能有任何的虚函数或虚基类，且必须使用编译器生成的拷贝赋值运算符。其基类和非静态数据成员也需要满足该要求</strong>，这使得编译器可以使用memcpy或其它等价的赋值操作，因为没有用户写入的代码。另外，<strong>自定义类型必须是按位可比的(bitwise equality comparable)</strong>，这使得可以使用memcpy和memcmp，并保证了“比较/交换”(compare/exchange)操作的正确工作。</p>
+
+<p>虽然<code class="highlighter-rouge">std::atomic&lt;float&gt;</code>和<code class="highlighter-rouge">std::atomic&lt;double&gt;</code>可以使用memcpy和memcmp，但是可能由于其表达形式(科学计数法)，使得原本相等的值使用memcmp得到的结果却不相同。</p>
+
+<p><strong>越复杂的数据结构就需要越多的操作，到一定复杂度时，你需要使用<code class="highlighter-rouge">std::mutex</code></strong>。</p>
+
+<p><strong>用户定义的原子类型只能使用<code class="highlighter-rouge">load()</code>、<code class="highlighter-rouge">store()</code>、<code class="highlighter-rouge">exchange()</code>、<code class="highlighter-rouge">compare_exchange_weak()</code>、<code class="highlighter-rouge">compare_exchange_strong()</code>、以及和自定义类型实例的赋值和转换操作</strong>。</p>
+
+<p><strong>原子类型能使用的操作</strong>：</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>operation</th>
+      <th><code class="highlighter-rouge">atomic_flag</code></th>
+      <th><code class="highlighter-rouge">atomic&lt;bool&gt;</code></th>
+      <th><code class="highlighter-rouge">atomic&lt;T*&gt;</code></th>
+      <th><code class="highlighter-rouge">atomic&lt;integral type&gt;</code></th>
+      <th><code class="highlighter-rouge">atomic&lt;other type&gt;</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="highlighter-rouge">test_and_set</code></td>
+      <td>√</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">clear</code></td>
+      <td>√</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">is_lock_free</code></td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">load</code></td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">store</code></td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">exchange</code></td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">compare_exchange_weak</code> <br /> <code class="highlighter-rouge">compare_exchange_strong</code></td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+      <td>√</td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">fetch_add, +=</code></td>
+      <td> </td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">fetch_sub, -=</code></td>
+      <td> </td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">fetch_or, |=</code></td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>√</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">fetch_and, &amp;=</code></td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>√</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">fetch_xor, ^=</code></td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>√</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="highlighter-rouge">++, --</code></td>
+      <td> </td>
+      <td> </td>
+      <td>√</td>
+      <td>√</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="nonmember_funtions_on_atomic_types">原子类型的非成员函数</h3>
+
+<p>不同的原子类型也有相同的非成员函数存在：</p>
+
+<ul>
+  <li>大多数非成员函数相对于相应的成员函数，只是多了<code class="highlighter-rouge">atomic_</code>前缀；</li>
+  <li>带有<code class="highlighter-rouge">_explicit</code>后缀的可以指定内存顺序(memory order)，如<code class="highlighter-rouge">std::atomic_store_explicit(&amp;atomic_var,new_value,std::memory_order_release)</code>；</li>
+  <li>由于成员函数拥有原子对象的隐式引用，所以<strong>非成员函数第一个参数都是原子对象的指针</strong>。</li>
+</ul>
+
+<p>查找visual studio 2017的源代码：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// GENERAL OPERATIONS ON ATOMIC TYPES (FORWARD DECLARATIONS)
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="k">struct</span> <span class="n">atomic</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_is_lock_free</span><span class="p">(</span><span class="k">const</span> <span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_is_lock_free</span><span class="p">(</span><span class="k">const</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">atomic_init</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">atomic_init</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">atomic_store</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">atomic_store</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">atomic_store_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="kt">void</span> <span class="n">atomic_store_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_load</span><span class="p">(</span><span class="k">const</span> <span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_load</span><span class="p">(</span><span class="k">const</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_load_explicit</span><span class="p">(</span><span class="k">const</span> <span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_load_explicit</span><span class="p">(</span><span class="k">const</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_exchange</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_exchange</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_exchange_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_exchange_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_weak</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_weak</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_weak_explicit</span><span class="p">(</span>
+		<span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+			<span class="n">memory_order</span><span class="p">,</span> <span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_weak_explicit</span><span class="p">(</span>
+		<span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+			<span class="n">memory_order</span><span class="p">,</span> <span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_strong</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_strong</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_strong_explicit</span><span class="p">(</span>
+		<span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+			<span class="n">memory_order</span><span class="p">,</span> <span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">bool</span> <span class="n">atomic_compare_exchange_strong_explicit</span><span class="p">(</span>
+		<span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span> <span class="o">*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+			<span class="n">memory_order</span><span class="p">,</span> <span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+
+		<span class="c1">// TEMPLATED OPERATIONS ON ATOMIC TYPES (DECLARED BUT NOT DEFINED)
+</span><span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_add</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_add</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_add_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_add_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_sub</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_sub</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_sub_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_sub_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_and</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_and</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_and_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_and_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_or</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_or</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_or_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_or_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_xor</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_xor</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_xor_explicit</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">_Ty</span><span class="o">&gt;</span>
+	<span class="n">_Ty</span> <span class="n">atomic_fetch_xor_explicit</span><span class="p">(</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">_Ty</span><span class="o">&gt;*</span><span class="p">,</span> <span class="n">_Ty</span><span class="p">,</span>
+		<span class="n">memory_order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span><span class="p">;</span>
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">std::atomic_flag</code>的非成员函数名与上面有些不同：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kr">inline</span> <span class="n">bool</span> <span class="n">atomic_flag_test_and_set</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically set *_Flag to true and return previous value
+</span>	<span class="k">return</span> <span class="p">(</span><span class="n">_Atomic_flag_test_and_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">memory_order_seq_cst</span><span class="p">));</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">bool</span> <span class="n">atomic_flag_test_and_set</span><span class="p">(</span><span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically set *_Flag to true and return previous value
+</span>	<span class="k">return</span> <span class="p">(</span><span class="n">_Atomic_flag_test_and_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">memory_order_seq_cst</span><span class="p">));</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">bool</span> <span class="n">atomic_flag_test_and_set_explicit</span><span class="p">(</span>
+	<span class="k">volatile</span> <span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">,</span> <span class="n">memory_order</span> <span class="n">_Order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically set *_Flag to true and return previous value
+</span>	<span class="k">return</span> <span class="p">(</span><span class="n">_Atomic_flag_test_and_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">_Order</span><span class="p">));</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">bool</span> <span class="n">atomic_flag_test_and_set_explicit</span><span class="p">(</span>
+	<span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">,</span> <span class="n">memory_order</span> <span class="n">_Order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically set *_Flag to true and return previous value
+</span>	<span class="k">return</span> <span class="p">(</span><span class="n">_Atomic_flag_test_and_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">_Order</span><span class="p">));</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="kt">void</span> <span class="n">atomic_flag_clear</span><span class="p">(</span><span class="k">volatile</span> <span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically clear *_Flag
+</span>	<span class="n">_Atomic_flag_clear</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">memory_order_seq_cst</span><span class="p">);</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="kt">void</span> <span class="n">atomic_flag_clear</span><span class="p">(</span><span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically clear *_Flag
+</span>	<span class="n">_Atomic_flag_clear</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">memory_order_seq_cst</span><span class="p">);</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="kt">void</span> <span class="n">atomic_flag_clear_explicit</span><span class="p">(</span>
+	<span class="k">volatile</span> <span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">,</span> <span class="n">memory_order</span> <span class="n">_Order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically clear *_Flag
+</span>	<span class="n">_Atomic_flag_clear</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">_Order</span><span class="p">);</span>
+	<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="kt">void</span> <span class="n">atomic_flag_clear_explicit</span><span class="p">(</span>
+	<span class="n">atomic_flag</span> <span class="o">*</span><span class="n">_Flag</span><span class="p">,</span> <span class="n">memory_order</span> <span class="n">_Order</span><span class="p">)</span> <span class="n">_NOEXCEPT</span>
+	<span class="p">{</span>	<span class="c1">// atomically clear *_Flag
+</span>	<span class="n">_Atomic_flag_clear</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_Flag</span><span class="o">-&gt;</span><span class="n">_My_flag</span><span class="p">,</span> <span class="n">_Order</span><span class="p">);</span>
+	<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>C++ 标准库也提供了<strong>以原子的方式访问<code class="highlighter-rouge">std::shared_ptr&lt;&gt;</code>实例的非成员函数</strong>，这打破了只有原子类型才能使用原子操作的原则，因为<code class="highlighter-rouge">std::shared_ptr&lt;&gt;</code>决然不是原子类型。但C++标准委员会觉得提供这些额外的函数很重要，支持的原子操作有：load、store、exchange、compare/exchange，这些操作作为标准原子类型相同操作的重载，<strong>使用<code class="highlighter-rouge">std::shared_ptr&lt;&gt;*</code>当做第一个参数，并且根据是否带有<code class="highlighter-rouge">_explicit</code>后缀决定是否可以指定内存顺序(memory order)，还可以使用<code class="highlighter-rouge">std::atomic_is_lock_free(shared_ptr&lt;&gt; *)</code>确认实现是否使用了内部锁</strong>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">my_data</span><span class="o">&gt;</span> <span class="n">p</span><span class="p">;</span>
+<span class="kt">void</span> <span class="nf">update_global_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">my_data</span><span class="o">&gt;</span> <span class="n">local</span><span class="p">(</span><span class="k">new</span> <span class="n">my_data</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic_store</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p</span><span class="p">,</span> <span class="n">local</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">process_global_data</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">my_data</span><span class="o">&gt;</span> <span class="n">local</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">atomic_load</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p</span><span class="p">);</span>
+	<span class="n">process_data</span><span class="p">(</span><span class="n">local</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="synchronize_operations_and_enforce_order">同步操作与强制顺序</h2>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 在不同的线程中读写变量
+</span><span class="cp">#include &lt;vector&gt;
+#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;iostream&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">data_ready</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">reader_thread</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">data_ready</span><span class="p">.</span><span class="n">load</span><span class="p">())</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">milliseconds</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+	<span class="p">}</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"The answer = "</span> <span class="o">&lt;&lt;</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">writer_thread</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">data</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+	<span class="n">data_ready</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>忽略循环等待的低效率，上面的程序保证了数据的写入在<code class="highlighter-rouge">data_ready</code>置位之前，数据的读取在<code class="highlighter-rouge">data_ready</code>的置位之后，所以保证了数据的读取在写入之后。这看起来好像是理所当然的，但是原子操作还有其它的顺序选项。</p>
+
+<h3 id="synchronize_with_and_happen_before">synchronizes-with,happen-before</h3>
+
+<p><strong>有两个非常重要的关系类型：同步(synchronizes-with)、发生在之前(happen-before)</strong>。</p>
+
+<blockquote>
+  <p>The basic idea is this: a suitably tagged atomic write operation W on a variable x synchronizes-with a suitably tagged atomic read operation on x that reads the value stored by either that write (W), or a subsequent atomic write operation on x by the same thread that performed the initial write W, or a sequence of atomic read-modify-write operations on x (such as fetch_add() or compare_exchange_weak()) by any thread, where the value read by the first thread in the sequence is the value written by W.</p>
+</blockquote>
+
+<ul>
+  <li><strong>synchronize-with</strong>：阅读<a href="http://preshing.com/20130823/the-synchronizes-with-relation/">这篇文章</a>，<strong>如果两个操作有同步关系，就会有happen-before关系</strong>。</li>
+  <li><strong>happen-before</strong>：在单线程中，如果一条语句在另一条之前，那么这条语句happen-before另一条；但如果两个操作发生在同一条语句中，那么这两个操作的顺序根据编译器的不同是不确定的。多线程中，<strong>如果一个线程中的操作A比另一个线程中的操作B先发生，那么称A inter-thread happen-before B</strong>。</li>
+</ul>
+
+<p><strong>当一个线程中的操作A synchronize-with 另一个线程中的操作B时，那么A inter-thread happen-before B</strong>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+</span>
+<span class="kt">void</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">,</span> <span class="kt">int</span> <span class="n">b</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">a</span> <span class="o">&lt;&lt;</span> <span class="s">", "</span> <span class="o">&lt;&lt;</span> <span class="n">b</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="nf">get_num</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">static</span> <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="k">return</span> <span class="o">++</span><span class="n">i</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="c1">// get_num()的调用顺序是不确定的
+</span>	<span class="n">foo</span><span class="p">(</span><span class="n">get_num</span><span class="p">(),</span> <span class="n">get_num</span><span class="p">());</span>
+
+	<span class="n">getchar</span><span class="p">();</span>
+	<span class="k">return</span> <span class="n">EXIT_SUCCESS</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="memory_order_for_atomic_operations">原子操作内存顺序(memory order)</h3>
+
+<p><strong>原子类型操作有六个可选的内存顺序(memory order)选项</strong>：<code class="highlighter-rouge">memory_order_relaxed</code>, <code class="highlighter-rouge">memory_order_consume</code>, <code class="highlighter-rouge">memory_order_acquire</code>, <code class="highlighter-rouge">memory_order_release</code>, <code class="highlighter-rouge">memory_order_acq_rel</code>, <code class="highlighter-rouge">memory_order_seq_cst</code>，<strong>所有操作的默认内存顺序(memory order)都是<code class="highlighter-rouge">memory_order_seq_cst</code></strong>。它们被分成三个模型：</p>
+
+<ul>
+  <li><strong>序列一致(sequentially consistent)顺序</strong>：<code class="highlighter-rouge">memory_order_seq_cst</code>；</li>
+  <li><strong>获取释放(acquire-release)顺序</strong>：<code class="highlighter-rouge">memory_order_consume</code>, <code class="highlighter-rouge">memory_order_acquire</code>, <code class="highlighter-rouge">memory_order_release</code>, <code class="highlighter-rouge">memory_order_acq_rel</code>；</li>
+  <li><strong>自由(relaxed)顺序</strong>：<code class="highlighter-rouge">memory_order_relaxed</code>。</li>
+</ul>
+
+<p>这些模型在不同CPU架构下的功耗是不同的，如何选择需要了解它们是怎样影响程序的行为的。</p>
+
+<h4 id="sequentially-consistent">序列一致(sequentially consistent)顺序</h4>
+
+<p><strong>如果所有原子类型的实例的操作都是序列一致(sequentially consistent)的，那么多线程的行为就像所有这些操作以一定的顺序在单线程中运行一样</strong>，这就是为什么它是默认内存顺序(memory order)的原因。<strong>你必须对所有线程使用序列一致(sequentially consistent)，才能获得这一特点</strong>。</p>
+
+<p><strong>序列一致(sequentially consistent)是最简单、最直观的排序，但是由于其需要对所有线程进行全局同步，所以它也是最昂贵的内存排序(memory order)</strong>。在一个多处理器系统上，使用序列一致(sequentially consistent)可能会导致处理器间进行大量且耗时的通信工作。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用序列一致(sequentially consistent)的简单例子
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">z</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">write_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_seq_cst</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">write_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">y</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_seq_cst</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_x_then_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_seq_cst</span><span class="p">));</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_seq_cst</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_y_then_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_seq_cst</span><span class="p">));</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_seq_cst</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">a</span><span class="p">(</span><span class="n">write_x</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">b</span><span class="p">(</span><span class="n">write_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">c</span><span class="p">(</span><span class="n">read_x_then_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">d</span><span class="p">(</span><span class="n">read_y_then_x</span><span class="p">);</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">b</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">c</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">d</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的示例中，assert永远不会造成中断，其运行情况可以分为三种：</p>
+
+<ul>
+  <li>如果<code class="highlighter-rouge">x.store</code>发生在<code class="highlighter-rouge">y.store</code>之前，且<code class="highlighter-rouge">read_x_then_y</code>的<code class="highlighter-rouge">y.load</code>发生在<code class="highlighter-rouge">y.store</code>之前，那么由于<code class="highlighter-rouge">read_y_then_x</code>中<code class="highlighter-rouge">x.load</code>一定是发生在<code class="highlighter-rouge">y.store</code>之后，所以<code class="highlighter-rouge">x.load</code>一定发生在<code class="highlighter-rouge">x.store</code>之后，所以<code class="highlighter-rouge">x.load</code>一定返回true，导致z递增加一；</li>
+  <li>上面情况的对称；</li>
+  <li>不管<code class="highlighter-rouge">x.store</code>和<code class="highlighter-rouge">y.store</code>谁先发生，如果<code class="highlighter-rouge">load</code>都发生在<code class="highlighter-rouge">store</code>之后，那么z会递增两次；</li>
+</ul>
+
+<h4 id="non-sequentially-consistent-memory">非序列一致(non-sequentially consistent memory)顺序</h4>
+
+<p>一旦跨出序列一致(sequentially consistent)的世界，事情就开始变得复杂起来。<strong>其中最大的问题就是：再也没有一个单一的全局的事件顺序了(there’s no longer a single global order of events)</strong>。这意味着：<strong>即使是同一个操作，不同的线程也将看到不同的视界(different views)，你必须将不同线程中操作的精神模型(mental model)整洁的交错在一起</strong>。</p>
+
+<p><strong>不仅你必须确保事件是真正并发的，并且线程并不需要去遵守事件的顺序(Not only do you have to account for things happening truly concurrently, but threads don’t have to agree on the order of events)</strong>。即使不同线程跑的是同一段代码，由于不同CPU缓存和内部缓冲区在同一个内存区里面可以存储不同的值，导致不同线程的操作缺少了严格的顺序限制。</p>
+
+<p><strong>在没有其他排序限制的情况下，唯一的要求是：所有线程都必须遵守每个变量的修改顺序(modification order)</strong>。不同变量的操作在不同线程中可以呈现出不同的顺序，只要所观察到的值与施加的任何排序约束一致。</p>
+
+<h4 id="relaxed">自由(relaxed)顺序</h4>
+
+<p><strong>使用自由(relaxed)顺序的原子操作没有同步(synchronizes-with)关系</strong>。单一线程中<strong>同一变量</strong>的操作依然遵守发生在之前(happen-before)关系，但是线程间几乎不需要相对顺序。唯一的要求是：<strong>同一线程中对同一个原子变量的访问不能被重新排序</strong>。一旦给定的线程已经看到一个原子变量的特定的值，那么该线程随后的读操作就不能获取该变量更早的值了。</p>
+
+<p><strong>在没有附加同步操作的情况下，使用<code class="highlighter-rouge">memory_order_relaxed</code>时线程间共享的唯一东西就是：每个变量的修改顺序(modification order)</strong>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用自由(relaxed)顺序的简单例子
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">z</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">write_x_then_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">y</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_y_then_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">));</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">a</span><span class="p">(</span><span class="n">write_x_then_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">b</span><span class="p">(</span><span class="n">read_y_then_x</span><span class="p">);</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">b</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的示例中，assert可能发生中断：根据自由(relaxed)顺序只支持同一变量在同一线程中的发生在之前(happen-before)关系，得出x、y的store之间是没有发生的先后关系的；根据自由(relaxed)顺序并不支持同步(synchronizes-with)关系，得出x、y的store和load之间也没有先后关系；最后根据以上两点，得出：<code class="highlighter-rouge">x.load</code>可能发生在<code class="highlighter-rouge">x.store</code>之前，所以z可能为0。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用自由(relaxed)顺序的复杂例子
+</span><span class="cp">#include &lt;thread&gt;
+#include &lt;atomic&gt;
+#include &lt;iostream&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">y</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">z</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">go</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+
+<span class="kt">unsigned</span> <span class="k">const</span> <span class="n">loop_count</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="n">read_values</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">read_values</span> <span class="n">values1</span><span class="p">[</span><span class="n">loop_count</span><span class="p">];</span>
+<span class="n">read_values</span> <span class="n">values2</span><span class="p">[</span><span class="n">loop_count</span><span class="p">];</span>
+<span class="n">read_values</span> <span class="n">values3</span><span class="p">[</span><span class="n">loop_count</span><span class="p">];</span>
+<span class="n">read_values</span> <span class="n">values4</span><span class="p">[</span><span class="n">loop_count</span><span class="p">];</span>
+<span class="n">read_values</span> <span class="n">values5</span><span class="p">[</span><span class="n">loop_count</span><span class="p">];</span>
+
+<span class="kt">void</span> <span class="nf">increment</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;*</span> <span class="n">var_to_inc</span><span class="p">,</span> <span class="n">read_values</span><span class="o">*</span> <span class="n">values</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">go</span><span class="p">)</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">var_to_inc</span><span class="o">-&gt;</span><span class="n">store</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">read_vals</span><span class="p">(</span><span class="n">read_values</span><span class="o">*</span> <span class="n">values</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">go</span><span class="p">)</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print</span><span class="p">(</span><span class="n">read_values</span><span class="o">*</span> <span class="n">v</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">loop_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">i</span><span class="p">)</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">","</span><span class="p">;</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">"("</span> <span class="o">&lt;&lt;</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">x</span> <span class="o">&lt;&lt;</span> <span class="s">","</span> <span class="o">&lt;&lt;</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">y</span> <span class="o">&lt;&lt;</span> <span class="s">","</span> <span class="o">&lt;&lt;</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">z</span> <span class="o">&lt;&lt;</span> <span class="s">")"</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t1</span><span class="p">(</span><span class="n">increment</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">x</span><span class="p">,</span> <span class="n">values1</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t2</span><span class="p">(</span><span class="n">increment</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">y</span><span class="p">,</span> <span class="n">values2</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t3</span><span class="p">(</span><span class="n">increment</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">z</span><span class="p">,</span> <span class="n">values3</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t4</span><span class="p">(</span><span class="n">read_vals</span><span class="p">,</span> <span class="n">values4</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t5</span><span class="p">(</span><span class="n">read_vals</span><span class="p">,</span> <span class="n">values5</span><span class="p">);</span>
+
+	<span class="n">go</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span> <span class="c1">// 确保线程几乎同时开始循环
+</span>
+	<span class="n">t5</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t4</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t3</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+
+	<span class="n">print</span><span class="p">(</span><span class="n">values1</span><span class="p">);</span>
+	<span class="n">print</span><span class="p">(</span><span class="n">values2</span><span class="p">);</span>
+	<span class="n">print</span><span class="p">(</span><span class="n">values3</span><span class="p">);</span>
+	<span class="n">print</span><span class="p">(</span><span class="n">values4</span><span class="p">);</span>
+	<span class="n">print</span><span class="p">(</span><span class="n">values5</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面代码运行起来稍微有些复杂，</p>
+
+<ul>
+  <li>首先还是从主函数开始看：主函数开了五个线程，其中三个线程除了读取全局原子变量之外，还对传入的原子参数进行了更新操作，然后是两个对原子变量只读线程，在所有线程完成之后，对所有赋值后的结构体数组变量进行打印操作；</li>
+  <li>再来看三个进行过原子更新操作的线程：根据自由(relaxed)顺序支持同一变量在同一线程中的发生在之前(happen-before)关系，所以线程t1对x的操作是有先后关系的，即load-&gt;store-&gt;load-&gt;…-&gt;store，t2、t3类似，所以values1所有元素的x成员、values2所有元素的y成员、values3所有元素的z成员一定是0123456789；</li>
+  <li>最后根据自由(relaxed)顺序并不支持同步(synchronizes-with)关系，所以所有线程对各个原子变量操作的相对顺序并没有保证，所以其它值将是0~10之间的任意值，但是因为单一原子变量的load是有先后关系的，所以values同一位置的值将会呈现不严格递增(大于等于)趋势。</li>
+</ul>
+
+<p>一种visual studio 2017的结果是：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>(0,4,4),(1,7,7),(2,10,10),(3,10,10),(4,10,10),(5,10,10),(6,10,10),(7,10,10),(8,10,10),(9,10,10)
+(0,0,0),(0,1,1),(0,2,2),(0,3,3),(0,4,4),(1,5,5),(1,6,6),(1,7,7),(2,8,8),(2,9,9)
+(0,0,0),(0,1,1),(0,2,2),(0,3,3),(0,4,4),(1,5,5),(1,6,6),(1,7,7),(2,8,8),(2,9,9)
+(10,10,10),(10,10,10),(10,10,10),(10,10,10),(10,10,10),(10,10,10),(10,10,10),(10,10,10),(10,10,10),(10,10,10)
+(0,3,3),(1,6,6),(2,8,8),(3,10,10),(4,10,10),(5,10,10),(6,10,10),(7,10,10),(8,10,10),(9,10,10)
+</code></pre>
+</div>
+
+<p>再次运行：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>(0,4,4),(1,7,7),(2,9,10),(3,10,10),(4,10,10),(5,10,10),(6,10,10),(7,10,10),(8,10,10),(9,10,10)
+(0,0,0),(0,1,1),(0,2,2),(0,3,3),(0,4,4),(1,5,5),(1,6,6),(1,7,7),(2,8,8),(2,9,9)
+(0,0,0),(0,1,1),(0,2,2),(0,3,3),(0,4,4),(1,5,5),(1,6,6),(1,7,7),(2,8,8),(2,9,9)
+(0,0,0),(0,1,1),(0,2,2),(0,2,3),(0,3,3),(0,4,4),(1,5,5),(1,6,6),(1,7,7),(2,8,8)
+(0,3,3),(1,6,6),(2,8,8),(3,10,10),(4,10,10),(5,10,10),(6,10,10),(7,10,10),(8,10,10),(9,10,10)
+</code></pre>
+</div>
+
+<p><strong>自由原子操作非常难处理，除非特别必要，否则不要使用自由(relaxed)顺序</strong>。</p>
+
+<h4 id="acquire-release">获取-释放(acquire-release)顺序</h4>
+
+<p>获取-释放(acquire-release)顺序是自由(relaxed)顺序的加强版，所有操作仍然没有统一的排序，但是它加入了一些同步。在这种顺序模型下，<strong>原子加载(load)是获取(acquire)操作(memory_order_acquire)，原子存储(store)是释放(release)操作(memory_order_release)，原子读改写(read-modify-write)是获取(acquire)、释放(release)、或者两者都有的操作(memory_order_acq_rel)</strong>。</p>
+
+<p><strong>同步是成对的，一个线程获取(acquire)，一个线程释放(release)</strong>。同一原子变量的释放(release)操作与获取(acquire)操作是同步的，这意味着同一原子变量的释放操作与获取操作是有先后顺序的，不同线程仍然可以看到不同的顺序，但这些顺序是有限制的。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用获取-释放(acquire-release)顺序的简单例子
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">z</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">write_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">write_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">y</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_x_then_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_y_then_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">a</span><span class="p">(</span><span class="n">write_x</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">b</span><span class="p">(</span><span class="n">write_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">c</span><span class="p">(</span><span class="n">read_x_then_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">d</span><span class="p">(</span><span class="n">read_y_then_x</span><span class="p">);</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">b</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">c</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">d</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的示例中，assert可能发生中断。主函数开了四个线程，其中两个写，两个读；线程<code class="highlighter-rouge">read_x_then_y</code>保证<code class="highlighter-rouge">x.load</code>一定发生在<code class="highlighter-rouge">x.store</code>之后，但<code class="highlighter-rouge">y.load</code>是不是发生在<code class="highlighter-rouge">y.store</code>之后并没有保证；同理，线程<code class="highlighter-rouge">read_y_then_x</code>中<code class="highlighter-rouge">x.load</code>也没有保证发生在<code class="highlighter-rouge">x.store</code>之后；如果<code class="highlighter-rouge">read_x_then_y</code>看到的顺序是<code class="highlighter-rouge">x.store</code>在<code class="highlighter-rouge">y.store</code>之前，<code class="highlighter-rouge">read_y_then_x</code>看到的顺序是<code class="highlighter-rouge">y.store</code>在<code class="highlighter-rouge">x.store</code>之前，那么z不会发生改变。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个体现获取-释放(acquire-release)顺序优点的简单例子
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">z</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">write_x_then_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">y</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_y_then_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">a</span><span class="p">(</span><span class="n">write_x_then_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">b</span><span class="p">(</span><span class="n">read_y_then_x</span><span class="p">);</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">b</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的示例中，assert永远不会发生中断。<code class="highlighter-rouge">read_y_then_x</code>保证<code class="highlighter-rouge">y.load</code>一定发生在<code class="highlighter-rouge">y.store</code>之前，<strong><code class="highlighter-rouge">memory_order_acquire</code>保证在<code class="highlighter-rouge">memory_order_release</code>之前的所有修改(原子的、非原子的)都能被其看见</strong>，所以<code class="highlighter-rouge">x.load</code>一定发生在<code class="highlighter-rouge">x.store</code>之后，所以z一定会递增。但如果<code class="highlighter-rouge">y.load</code>不是在循环里，结果就会不同。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// memory_order_acquire保证在memory_order_release之前的所有修改都能被其看见
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">sync1</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span> <span class="n">sync2</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+
+<span class="kt">void</span> <span class="nf">thread_1</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">97</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="o">-</span><span class="mi">141</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">2003</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">sync1</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">thread_2</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">sync1</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="n">sync2</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">thread_3</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">sync2</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">42</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">97</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">17</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">141</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2003</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t1</span><span class="p">(</span><span class="n">thread_1</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t2</span><span class="p">(</span><span class="n">thread_2</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t3</span><span class="p">(</span><span class="n">thread_3</span><span class="p">);</span>
+
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t3</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的示例中，<code class="highlighter-rouge">thread_2</code>作为中间线程，使得<code class="highlighter-rouge">thread_1</code>与<code class="highlighter-rouge">thread_3</code>进行了同步。为了验证<code class="highlighter-rouge">memory_order_release</code>之后的修改是否能被<code class="highlighter-rouge">memory_order_acquire</code>看见，修改上面程序，添加一个额外的int全局变量test，在<code class="highlighter-rouge">memory_order_release</code>之后改变它的值，为了确保验证的正确性，添加一个一秒的延时：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// memory_order_release之后的修改并不一定能被memory_order_acquire看见
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">sync1</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span> <span class="n">sync2</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+
+<span class="kt">int</span> <span class="n">test</span><span class="p">{</span> <span class="mi">0</span> <span class="p">};</span>
+
+<span class="kt">void</span> <span class="nf">thread_1</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">97</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="o">-</span><span class="mi">141</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="mi">2003</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">sync1</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">milliseconds</span><span class="p">(</span><span class="mi">1000</span><span class="p">));</span>
+	<span class="n">test</span> <span class="o">=</span> <span class="mi">233</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">thread_2</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">sync1</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="n">sync2</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">thread_3</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">sync2</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">));</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">42</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">97</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">17</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">141</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2003</span><span class="p">);</span>
+
+	<span class="n">assert</span><span class="p">(</span><span class="n">test</span> <span class="o">==</span> <span class="mi">233</span><span class="p">);</span> <span class="c1">// fire
+</span><span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t1</span><span class="p">(</span><span class="n">thread_1</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t2</span><span class="p">(</span><span class="n">thread_2</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t3</span><span class="p">(</span><span class="n">thread_3</span><span class="p">);</span>
+
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t3</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>你也可以使用读改写(read-modify-write)操作来实现上上个示例：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">sync</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">thread_1</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="c1">// ...
+</span>	<span class="n">sync</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">thread_2</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">expected</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">sync</span><span class="p">.</span><span class="n">compare_exchange_strong</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">memory_order_acq_rel</span><span class="p">))</span>
+		<span class="n">expected</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">thread_3</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="n">sync</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">);</span>
+	<span class="c1">// ...
+</span><span class="p">}</span>
+</code></pre>
+</div>
+
+<p><strong>如果你确认不需要严格的序列一致(sequentially consistent)顺序，使用获取-释放(require-release)顺序是个不错的选择</strong>。</p>
+
+<h4 id="memoryorderconsume">memory_order_consume</h4>
+
+<p><code class="highlighter-rouge">memory_order_consume</code>是获取-释放(require-release)顺序模型的一部分。它很特别：它完全依赖于数据。</p>
+
+<p>这里有两种新的数据依赖关系：</p>
+
+<ul>
+  <li><strong>携带依赖(carries-a-dependency-to)</strong>：如果操作A的结果被用作操作B的操作数，则A carries-a-dependency-to B。该关系具有传递性。</li>
+  <li><strong>前序依赖(dependency-ordered-before)</strong>：该关系以标记为<code class="highlighter-rouge">memory_order_consume</code>的原子加载(load)操作进行引入，它是<code class="highlighter-rouge">memory_order_acquire</code>的一个特例；一个标记为<code class="highlighter-rouge">memory_order_release</code>、<code class="highlighter-rouge">memory_order_acq_rel</code>或<code class="highlighter-rouge">memory_order_seq_cst</code>的存储(store)操作A前序依赖于一个标记为<code class="highlighter-rouge">memory_order_consume</code>的加载(load)操作B，如果B读取的是A存储(store)的值的话。<strong>如果A dependency-ordered-before B，那么A inter-thread happen-before B</strong>。</li>
+</ul>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用memory_order_consume的简单例子
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="k">struct</span> <span class="n">X</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">s</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">X</span><span class="o">*&gt;</span> <span class="n">p</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">a</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">create_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">X</span><span class="o">*</span> <span class="n">x</span> <span class="o">=</span> <span class="k">new</span> <span class="n">X</span><span class="p">;</span>
+	<span class="n">x</span><span class="o">-&gt;</span><span class="n">i</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
+	<span class="n">x</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span> <span class="s">"hello"</span><span class="p">;</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="mi">99</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">p</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">use_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">X</span><span class="o">*</span> <span class="n">x</span><span class="p">;</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_consume</span><span class="p">)))</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">i</span> <span class="o">==</span> <span class="mi">42</span><span class="p">);</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">==</span> <span class="s">"hello"</span><span class="p">);</span> 
+	<span class="n">assert</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">99</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t1</span><span class="p">(</span><span class="n">create_x</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">t2</span><span class="p">(</span><span class="n">use_x</span><span class="p">);</span>
+	<span class="n">t1</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">t2</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的示例中，x的值 dependency-ordered-before p，所以x的值一定是<code class="highlighter-rouge">p.store</code>存储的值，所以关于x的断言(assert)永远不会发生中断；但是a的断言(assert)并不依赖于p的值，所以它可能发生中断。</p>
+
+<p>当一个值并不 carries-a-dependency-to <code class="highlighter-rouge">memory_order_consume</code>加载(load)的值时，使用<code class="highlighter-rouge">std::kill_dependency</code>可以让编译器有更大的空间进行优化，搞不清楚就去<a href="https://stackoverflow.com/questions/7150395/what-does-stdkill-dependency-do-and-why-would-i-want-to-use-it">SOF</a>看看，但是我觉得并没有必要使用这个东西：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">int</span> <span class="n">global_data</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="p">...</span> <span class="p">};</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">index</span><span class="p">;</span>
+<span class="kt">void</span> <span class="nf">f</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">index</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_consume</span><span class="p">);</span>
+	<span class="n">do_something_with</span><span class="p">(</span><span class="n">global_data</span><span class="p">[</span><span class="n">std</span><span class="o">::</span><span class="n">kill_dependency</span><span class="p">(</span><span class="n">i</span><span class="p">)]);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="release_sequences_and_synchronize_with">release sequences and synchronize-with</h3>
+
+<p>如果store以<code class="highlighter-rouge">memory_order_release</code>、<code class="highlighter-rouge">memory_order_acq_rel</code>或<code class="highlighter-rouge">memory_order_seq_cst</code>标记，load以<code class="highlighter-rouge">memory_order_consume</code>、<code class="highlighter-rouge">memory_order_acquire</code>或<code class="highlighter-rouge">memory_order_seq_cst</code>标记，且链上的每一load操作得到的值都是前一store操作写下的值，那么这个操作链组成了一个释放序列(release sequences)，并且初始化store synchronize-with (对应<code class="highlighter-rouge">memory_order_acquire</code>和<code class="highlighter-rouge">memory_order_seq_cst</code>)或 dependency-ordered-before (对应<code class="highlighter-rouge">memory_order_consume</code>)最终load。该链上任何原子读改写(read-modify-write)操作可以拥有任何内存顺序(memory order)，甚至<code class="highlighter-rouge">memory_order_relaxed</code>。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 使用原子操作从一个队列中读值
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;vector&gt;
+#include &lt;iostream&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">queue_data</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">count</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">populate_queue</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="kt">unsigned</span> <span class="k">const</span> <span class="n">number_of_items</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+	<span class="n">queue_data</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">number_of_items</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">queue_data</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="n">count</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="n">number_of_items</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">process</span><span class="p">(</span><span class="kt">int</span> <span class="o">&amp;</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span> <span class="o">++</span><span class="n">i</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">consume_queue_items</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="kt">int</span> <span class="n">item_index</span><span class="p">;</span>
+		<span class="c1">// fetch_sub: 调用值减去参数值，并返回原值
+</span>		<span class="k">if</span> <span class="p">((</span><span class="n">item_index</span> <span class="o">=</span> <span class="n">count</span><span class="p">.</span><span class="n">fetch_sub</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">yield</span><span class="p">();</span>
+			<span class="k">continue</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="n">process</span><span class="p">(</span><span class="n">queue_data</span><span class="p">[</span><span class="n">item_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]);</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">a</span><span class="p">(</span><span class="n">populate_queue</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">b</span><span class="p">(</span><span class="n">consume_queue_items</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">c</span><span class="p">(</span><span class="n">consume_queue_items</span><span class="p">);</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">b</span><span class="p">.</span><span class="n">detach</span><span class="p">();</span>
+	<span class="n">c</span><span class="p">.</span><span class="n">detach</span><span class="p">();</span>
+
+	<span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="o">&amp;</span><span class="n">i</span> <span class="o">:</span> <span class="n">queue_data</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="s">" "</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>结果：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+</code></pre>
+</div>
+
+<p>分析：我们知道当consumer只开一个时，由于<code class="highlighter-rouge">memory_order_acquire</code>会看到<code class="highlighter-rouge">memory_order_release</code>之前的全部修改，所以代码会工作的很好。但是现在consumer开了两个，那么第二个consumer就可能看到第一个consumer修改后的值，除非第一个<code class="highlighter-rouge">fetch_sub</code>使用<code class="highlighter-rouge">memory_order_release</code>，但这会带来不必要的同步；如果没有释放序列(release sequence)规则或者<code class="highlighter-rouge">fetch_sub</code>没有使用<code class="highlighter-rouge">memory_order_release</code>的话，没有什么能够要求第二个consumer能够看到<code class="highlighter-rouge">queue_data</code>的store操作。庆幸的是，<code class="highlighter-rouge">fetch_sub</code>参与了释放序列(release sequence)，所以store也同步到第二个<code class="highlighter-rouge">fetch_sub</code>，并且两个consumer也没有进行同步。下面图的实线显示了发生在之前(happens-before)关系，虚线显示了释放序列(release sequence)。</p>
+
+<p><img src="https://raw.githubusercontent.com/xiaoweiChen/Cpp_Concurrency_In_Action/master/images/chapter5/5-7.png" alt="release sequence" /></p>
+
+<p>这里的链可以有任意数量的连接，只要它们都是读改写(read-modify-write)操作，那么store将会同步到每一个标记为<code class="highlighter-rouge">memory_order_acquire</code>的操作。</p>
+
+<h3 id="fences">fences</h3>
+
+<p>fences是在没有修改数据的情况下强制内存顺序(memory order)限制的操作，典型的是与<code class="highlighter-rouge">memory_order_relaxed</code>的原子操作一起使用。fences是全局操作，并且会影响线程中执行了fences的原子操作的顺序。fences通常也被称为内存屏障(memory barriers)，因为它们就像在代码中画出了一条某些(certain)操作无法跨越的线一样。</p>
+
+<p>你应该知道，不同变量上的relaxed操作根据编译器或硬件的不同，可以被任意排序，但fences限制了这个自由，并且引入了happen-before和synchronize-with关系。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// 一个使用atomic_thread_fence的简单例子
+</span><span class="cp">#include &lt;atomic&gt;
+#include &lt;thread&gt;
+#include &lt;cassert&gt;
+</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">bool</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">z</span><span class="p">;</span>
+
+<span class="kt">void</span> <span class="nf">write_x_then_y</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic_thread_fence</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+	<span class="n">y</span><span class="p">.</span><span class="n">store</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">read_y_then_x</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">y</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">));</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic_thread_fence</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">))</span>
+		<span class="o">++</span><span class="n">z</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">y</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+	<span class="n">z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">a</span><span class="p">(</span><span class="n">write_x_then_y</span><span class="p">);</span>
+	<span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">b</span><span class="p">(</span><span class="n">read_y_then_x</span><span class="p">);</span>
+	<span class="n">a</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">b</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+	<span class="n">assert</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">load</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的assert永远不会发生中断，因为<code class="highlighter-rouge">atomic_thread_fence</code>使得<code class="highlighter-rouge">x.store</code>一定发生在<code class="highlighter-rouge">x.load</code>之前，所以z一定会递增；但是如果没有<code class="highlighter-rouge">atomic_thread_fence</code>的话，assert可能会发生中断，因为<code class="highlighter-rouge">x.store</code>与<code class="highlighter-rouge">y.store</code>没有绝对的相对顺序。</p>
+
+<blockquote>
+  <p>This is the general idea with fences: if an acquire operation sees the result of a store that takes place after a release fence, the fence synchronizes-with that acquire operation; and if a load that takes place before an acquire fence sees the result of a release operation, the release operation synchronizes-with the acquire fence.</p>
+</blockquote>
+
+<h2 id="examples_of_lock_free_data_structures">无锁数据结构示例</h2>
+
+<p><strong>无锁数据结构依赖于原子操作，及其关联的memory order</strong>，用以确保数据以正确的顺序被其他线程看到。刚开始我们会使用默认的memory order–<code class="highlighter-rouge">memory_order_seq_cst</code>，然后会用<code class="highlighter-rouge">memory_order_acquire</code>、<code class="highlighter-rouge">memory_order_release</code>、甚至<code class="highlighter-rouge">memory_order_relaxed</code>来减少一些顺序的限制。<strong>虽然这些示例都没有直接使用mutex，但是只有<code class="highlighter-rouge">std::atomic_flag</code>保证其实现不会使用mutex</strong>。在一些环境中，无锁数据结构可能实际上使用的是内部锁实现的，在这种情况下，使用有锁数据结构可能会更加适合，总之：<strong>在选择实现方式时，你需要确认自己的需求，并配置复合这些要求的各种选项</strong>。</p>
+
+<h3 id="writing_a_thread_safe_stack_without_locks">Writing a thread-safe stack without locks</h3>
+
+<p>stack的基本前提是相对简单的：last in, first out(LIFO)。所以有一件事是非常重要的：一旦一个值被添加到stack，那么它可以马上被其他线程安全的获取，且只能有一个线程获取到。</p>
+
+<p>最简单的stack使用linked list实现的：head指针指向第一个节点，然后<code class="highlighter-rouge">head-&gt;next</code>指向下一个节点。添加一个节点在单线程中需要做以下操作：</p>
+
+<ul>
+  <li>创建一个新节点；</li>
+  <li>设置该新节点的next到当前head；</li>
+  <li>更新head，使其指向该新节点。</li>
+</ul>
+
+<p>该操作在单线程中是没有问题的，但是如果有两个线程同时在添加节点，那么步骤2和步骤3之间就可能有条件竞争，在当前线程做完步骤2后，开始步骤3前，也许其它线程已经修改了head指向，那么其他线程添加的节点就失去了指向(稍微画个图就明白了)，就像被丢弃了一样，但是可能因为没有被释放，会一直占用着内存。解决方案就是：在步骤3中使用原子compare/exchange操作，用以确保步骤2读取到的head没有被修改，如果其被修改了，那么重新开始。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">lock</span><span class="n">_free_stack</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">T</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">next</span><span class="p">;</span>
+		<span class="n">node</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">data_</span><span class="p">)</span> <span class="o">:</span>
+			<span class="n">data</span><span class="p">(</span><span class="n">data_</span><span class="p">)</span>
+		<span class="p">{}</span>
+	<span class="p">};</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">node</span><span class="o">*&gt;</span> <span class="n">head</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_node</span> <span class="o">=</span> <span class="k">new</span> <span class="n">node</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+		<span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">head</span><span class="p">.</span><span class="n">load</span><span class="p">();</span>
+		<span class="c1">// 若new_node-&gt;next与head.load()相等，则head被赋值为new_node，循环结束
+</span>		<span class="c1">// 否则，new_node-&gt;next被赋值为head.load()，再次循环
+</span>		<span class="c1">// 使用weak而非strong是因为前者在某些架构上能使代码更加优化
+</span>		<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">head</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">,</span> <span class="n">new_node</span><span class="p">));</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>上面唯一可能发生异常的地方是<code class="highlighter-rouge">new node</code>，但是这并不影响这个数据结构，因为它并没有修改任何节点；由于没有lock，也不会有deadlock的危险；条件竞争(race condition)也用compare/exchange解决了。所以现在我们有了一个安全的无锁的向stack添加数据的接口了，接下来我们需要设计一个pop接口。在单线程中，pop的步骤如下：</p>
+
+<ul>
+  <li>读取当前head；</li>
+  <li>读取<code class="highlighter-rouge">head-&gt;next</code>；</li>
+  <li>更新head，使其指向<code class="highlighter-rouge">head-&gt;next</code>；</li>
+  <li>返回获取到的节点的数据；</li>
+  <li>删除获取的节点。</li>
+</ul>
+
+<p>还是老问题，如果有两个线程同时pop，那么这两个线程在步骤1可能读取到相同的head，如果其中一个线程A在另一个线程B执行步骤2前就完成了所有步骤，那么此时B读取到的head就是被删除的指针，继续使用将会造成未定义行为，所以我们先不删除节点。另一个问题是：A和B读取到的是相同的head，那么它们会返回相同的节点数据，这是违反stack的意图的。你可以用在push中相同的方法来解决这个问题，那就是使用compare/exchange操作：使用compare/exchange来更新head，如果失败了，要么是有一个新的节点被push了，要么就是另一个线程pop了你想pop的节点，不管哪个原因，你需要返回step1重新开始；如果成功了那么你就是唯一一个执行pop操作的线程，你可以安全的执行step4。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">result</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">node</span><span class="o">*</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">head</span><span class="p">.</span><span class="n">load</span><span class="p">();</span>
+	<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">head</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">old_head</span><span class="p">,</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">));</span>
+	<span class="n">result</span> <span class="o">=</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>上面的代码虽然看起来简洁又nice，但是还是有节点泄露的问题：</p>
+
+<ul>
+  <li>首先，当列表为空时，pop是不能工作的，因为此时<code class="highlighter-rouge">head.load()</code>是nullptr，使用其next会造成未定义行为，你可以在一个while中循环检测nullptr，或者抛出一个<code class="highlighter-rouge">empty stack</code>异常，或者返回一个bool值用以指示成功或失败；</li>
+  <li>第二个问题是异常安全问题，在<a href="https://chorior.github.io/2017/04/24/C++-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%9F%BA%E7%A1%80%E7%AF%87/#api_design_with_mutex">基础篇</a>我们讲过，直接返回值如果发生异常的话，那么原值就会丢失，在这种情况下，传入引用是一个可选的方法，你可以确保在异常发生时，stack的值保持不变，然而不幸的是，你不能这么做，你只能在你知道自己是唯一一个返回该节点的情况下才能安全的复制数据，这意味着该节点已经被stack移除了，因此传入引用没有任何优势，直接返回也是可以的。如果你想安全的返回值，你可以选择返回一个智能指针，nullptr用来指明没有值可以返回，但是数据也需要内存分配，这也可能发生异常，你可以将内存分配放到push中去。</li>
+</ul>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">lock</span><span class="n">_free_stack</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">next</span><span class="p">;</span>
+		<span class="n">node</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">data_</span><span class="p">)</span> <span class="o">:</span>
+			<span class="n">data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">data_</span><span class="p">))</span>
+		<span class="p">{}</span>
+	<span class="p">};</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">node</span><span class="o">*&gt;</span> <span class="n">head</span><span class="p">;</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_node</span> <span class="o">=</span> <span class="k">new</span> <span class="n">node</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+		<span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">head</span><span class="p">.</span><span class="n">load</span><span class="p">();</span>
+		<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">head</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">,</span> <span class="n">new_node</span><span class="p">));</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">head</span><span class="p">.</span><span class="n">load</span><span class="p">();</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">old_head</span> <span class="o">&amp;&amp;</span>
+			<span class="o">!</span><span class="n">head</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">old_head</span><span class="p">,</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">));</span>
+		<span class="k">return</span> <span class="n">old_head</span> <span class="o">?</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">data</span> <span class="o">:</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>上面的代码将data数据类型修改为了<code class="highlighter-rouge">std::shared_ptr</code>，pop中也检查了head为空的情况。整个数据结构时无锁但却不是无等待的，因为两个while可能一直在循环。</p>
+
+<h4 id="stopping-those-pesky-leaks-managing-memory-in-lock-free-data-structures">Stopping those pesky leaks: managing memory in lock-free data structures</h4>
+
+<p>众所周知，C++是没有像java或C#那样的垃圾回收机制的，所以你需要自己清理pop中的<code class="highlighter-rouge">old_head</code>。但是<strong>在确定没有其他线程在使用该指针前，你是不能做delete操作的</strong>。push一旦将节点添加到stack之后，就不再与该节点有任何关系了，所以pop肯定是唯一一个可以接触节点并安全删除节点的线程。</p>
+
+<p>另一方面，如果你需要处理多个线程对同一个stack调用pop的情况，那么你需要一些方法来跟踪什么时候删除节点是安全的。这实际上意味着你需要为节点写一个专用的垃圾回收器，这听起来可能有些恐怖，实际上也相当棘手，但并不是那么糟糕：你仅仅只需要检查pop访问的节点，push中的节点你并不需要担心，因为直到节点被添加到stack，push中的节点只有它一个线程能访问。</p>
+
+<p>如果没有线程在调用pop，删除所有待删除的节点是绝对安全的。因此，当你提取完数据之后，你可以将节点添加到“待删除”列表，然后等待没有线程在调用pop时将它们全部删除。很显然，你如何才能知道没有线程在调用pop呢，很简单，在pop里添加一个计数器即可：进入时递增计数器，退出时递减计数器。当然该计数器也必须是原子的，使用整型原子变量就可以担此大任。</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">lock</span><span class="n">_free_stack</span>
+<span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+	<span class="k">struct</span> <span class="n">node</span>
+	<span class="p">{</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="p">;</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">next</span><span class="p">;</span>
+		<span class="n">node</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">data_</span><span class="p">)</span> <span class="o">:</span>
+			<span class="n">data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">data_</span><span class="p">))</span>
+		<span class="p">{}</span>
+	<span class="p">};</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">node</span><span class="o">*&gt;</span> <span class="n">head</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">unsigned</span><span class="o">&gt;</span> <span class="n">threads_in_pop</span><span class="p">;</span>
+	<span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">node</span><span class="o">*&gt;</span> <span class="n">to_be_deleted</span><span class="p">;</span>
+
+	<span class="k">static</span> <span class="kt">void</span> <span class="nf">delete_nodes</span><span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="n">nodes</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">node</span><span class="o">*</span> <span class="n">next</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+			<span class="k">delete</span> <span class="n">nodes</span><span class="p">;</span>
+			<span class="n">nodes</span> <span class="o">=</span> <span class="n">next</span><span class="p">;</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="nf">try_reclaim</span><span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="n">old_head</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="c1">// 当前只有你一个线程在调用pop，可以安全的删除old_head和待删除的节点
+</span>		<span class="k">if</span> <span class="p">(</span><span class="n">threads_in_pop</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="c1">// exchange: 交换存储的值与传入的值，返回交换后传入的值
+</span>			<span class="n">node</span><span class="o">*</span> <span class="n">nodes_to_delete</span> <span class="o">=</span> <span class="n">to_be_deleted</span><span class="p">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">nullptr</span><span class="p">);</span>
+
+			<span class="c1">// 如果threads_in_pop递减之后为0，那么意味着没有其它线程可以访问待删除节点列表
+</span>			<span class="k">if</span> <span class="p">(</span><span class="o">!--</span><span class="n">threads_in_pop</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">delete_nodes</span><span class="p">(</span><span class="n">nodes_to_delete</span><span class="p">);</span>
+			<span class="p">}</span>
+			<span class="c1">// 如果threads_in_pop递减之后不为0，那么需要将交换出来的节点重新放回到待删除列表
+</span>			<span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">nodes_to_delete</span><span class="p">)</span>
+			<span class="p">{</span>
+				<span class="n">chain_pending_nodes</span><span class="p">(</span><span class="n">nodes_to_delete</span><span class="p">);</span>
+			<span class="p">}</span>
+			<span class="k">delete</span> <span class="n">old_head</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="c1">// 若当前不止你一个线程在调用pop，那么将old_head添加到待删除列表
+</span>		<span class="k">else</span>
+		<span class="p">{</span>
+			<span class="n">chain_pending_node</span><span class="p">(</span><span class="n">old_head</span><span class="p">);</span>
+			<span class="o">--</span><span class="n">threads_in_pop</span><span class="p">;</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="nf">chain_pending_nodes</span><span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="n">nodes</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">last</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">;</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">next</span> <span class="o">=</span> <span class="n">last</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">last</span> <span class="o">=</span> <span class="n">next</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="n">chain_pending_nodes</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">last</span><span class="p">);</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="nf">chain_pending_nodes</span><span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="n">first</span><span class="p">,</span> <span class="n">node</span><span class="o">*</span> <span class="n">last</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">last</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">to_be_deleted</span><span class="p">;</span>
+		<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">to_be_deleted</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span>
+			<span class="n">last</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">,</span> <span class="n">first</span><span class="p">));</span>
+	<span class="p">}</span>
+
+	<span class="kt">void</span> <span class="nf">chain_pending_node</span><span class="p">(</span><span class="n">node</span><span class="o">*</span> <span class="n">n</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">chain_pending_nodes</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
+	<span class="p">}</span>
+
+<span class="k">public</span><span class="o">:</span>
+	<span class="kt">void</span> <span class="n">push</span><span class="p">(</span><span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">node</span><span class="o">*</span> <span class="k">const</span> <span class="n">new_node</span> <span class="o">=</span> <span class="k">new</span> <span class="n">node</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+		<span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">head</span><span class="p">.</span><span class="n">load</span><span class="p">();</span>
+		<span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">head</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">new_node</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">,</span> <span class="n">new_node</span><span class="p">));</span>
+	<span class="p">}</span>
+
+	<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">pop</span><span class="p">()</span>
+	<span class="p">{</span>
+		<span class="o">++</span><span class="n">threads_in_pop</span><span class="p">;</span>
+		<span class="n">node</span><span class="o">*</span> <span class="n">old_head</span> <span class="o">=</span> <span class="n">head</span><span class="p">.</span><span class="n">load</span><span class="p">();</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">old_head</span> <span class="o">&amp;&amp;</span>
+			<span class="o">!</span><span class="n">head</span><span class="p">.</span><span class="n">compare_exchange_weak</span><span class="p">(</span><span class="n">old_head</span><span class="p">,</span> <span class="n">old_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">));</span>
+		<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">res</span><span class="p">;</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">old_head</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="c1">// 使用swap会将传入参数的所有权移交到调用者，现在old_head可以随意删除了
+</span>			<span class="n">res</span><span class="p">.</span><span class="n">swap</span><span class="p">(</span><span class="n">old_head</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">);</span>
+		<span class="p">}</span>
+		<span class="n">try_reclaim</span><span class="p">(</span><span class="n">old_head</span><span class="p">);</span> <span class="c1">// threads_in_pop在这里递减
+</span>		<span class="k">return</span> <span class="n">res</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>无锁数据结构太难了，上面是最简单的数据结构，还没设计完！其实后面还有一些分析，你可以自行查看《C++ Concurrency in Action》7.2.2节及其后面的内容。我自认为如果让我自己构建的话，我是绝对想不到这么多的，在工作中需要经常调试又很难找出错误的代码是不允许出现的，我还是比较适合带锁的数据结构，当然这只是安慰自己的借口而已，后面会跳过无锁数据结构的设计，开始并发代码设计、管理和调试的学习！</p>
+
+
+                <hr>
+
+
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2017/05/24/C++-thread-design-1/" data-toggle="tooltip" data-placement="top" title="C++ 多线程设计（一）">
+                        Previous<br>
+                        <span>C++ 多线程设计（一）</span>
+                        </a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2017/07/06/C++-thread-application/" data-toggle="tooltip" data-placement="top" title="C++ 多线程应用篇">
+                        Next<br>
+                        <span>C++ 多线程应用篇</span>
+                        </a>
+                    </li>
+                    
+                </ul>
+
+
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <hr class="hidden-sm hidden-xs">
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+        				
+                            
+                				<a href="/tags/#Python" title="Python" rel="1">
+                                    Python
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Markdown" title="Markdown" rel="1">
+                                    Markdown
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++" title="C++" rel="9">
+                                    C++
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#C++ primer" title="C++ primer" rel="4">
+                                    C++ primer
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#thread" title="thread" rel="4">
+                                    thread
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#Qt5" title="Qt5" rel="1">
+                                    Qt5
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#git" title="git" rel="1">
+                                    git
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#shell" title="shell" rel="1">
+                                    shell
+                                </a>
+                            
+        				
+                            
+                				<a href="/tags/#algorithm" title="algorithm" rel="1">
+                                    algorithm
+                                </a>
+                            
+        				
+        			</div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+                    
+                        <li><a href="http://huangxuan.me">Hux Blog</a></li>
+                    
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+</article>
+
+
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "blog-pengzhen";
+    var disqus_identifier = "/2017/06/08/C++-thread-design-2";
+    var disqus_url = "https://chorior.github.io/2017/06/08/C++-thread-design-2/";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+
+
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                     
+                    <li>
+                        <a href="/feed.xml">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-rss fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+
+                    <!-- add Weibo, Zhihu by Hux, add target = "_blank" to <a> by Hux -->
+                    
+                    
+                    <li>
+                        <a target="_blank" href="http://weibo.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+
+
+                    
+                    
+                    <li>
+                        <a target="_blank" href="https://github.com/Chorior">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                    
+                    
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Chorior 2019
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> |
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=huxpro&repo=huxpro.github.io&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js "></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js "></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js "></script>
+
+<!-- Service Worker -->
+
+<script src="/js/sw-registration.js "></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async('/js/jquery.tagcloud.js',function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-92626017-1';
+    var _gaDomain = 'auto';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+<!-- Baidu Tongji -->
+
+
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+<!-- Image to hack wechat -->
+<!-- <img src="/img/icon_wechat.png" width="0" height="0" /> -->
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
