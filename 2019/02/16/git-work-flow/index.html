@@ -276,7 +276,7 @@
 
 <p><strong>如果忘记配置的话，git 不会让你提交任何东西</strong>。仔细看，你会发现上面所有的配置都包含有 <code class="highlighter-rouge">--global</code> 选项，这表明所有的配置都是全局的，以后你再新建项目时，就不用再重新配置了，当然你也可以不用该选项。</p>
 
-<p>另外，添加 <code class="highlighter-rouge">--global</code> 选项修改的是用户目录下的 <code class="highlighter-rouge">.gitconfig</code> 文件，例如 windows 下我的就是 <code class="highlighter-rouge">C:\Users\pengzhen\.gitconfig</code>，linux 下为 <code class="highlighter-rouge">~/.gitconfig</code>；不添加 <code class="highlighter-rouge">--global</code> 选项修改的是项目目录下的 <code class="highlighter-rouge">.git/config</code>，<strong>该配置文件的变量会覆盖全局的同名变量</strong>。</p>
+<p>另外，添加 <code class="highlighter-rouge">--global</code> 选项修改的是用户目录下的 <code class="highlighter-rouge">.gitconfig</code> 文件，例如 windows 下我的就是 <code class="highlighter-rouge">C:\Users\landslipzy\.gitconfig</code>，linux 下为 <code class="highlighter-rouge">~/.gitconfig</code>；不添加 <code class="highlighter-rouge">--global</code> 选项修改的是项目目录下的 <code class="highlighter-rouge">.git/config</code>，<strong>该配置文件的变量会覆盖全局的同名变量</strong>。</p>
 
 <h2 id="create_repository">创建仓库</h2>
 
@@ -375,7 +375,7 @@
   <li>第四行缩进一个段落显示提交说明。</li>
 </ul>
 
-<p><img src="https://chorior.github.io/img/gitlog.png" alt="git log" /></p>
+<p><img src="https://chorior.github.io/img/gitlog.jpg" alt="git log" /></p>
 
 <h2 id="branch_operation">分支操作</h2>
 
@@ -412,8 +412,8 @@
 
 <p>生成 ssh 公匙：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>ssh-keygen -t rsa -C pengzhen@example.com <span class="c"># 后面一直回车即可</span>
-<span class="gp">$ </span>cat /c/Users/pengzhen/.ssh/id_rsa.pub     <span class="c"># 查看生成的密匙</span>
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>ssh-keygen -t rsa -C landslipzy@example.com <span class="c"># 后面一直回车即可</span>
+<span class="gp">$ </span>cat /c/Users/landslipzy/.ssh/id_rsa.pub     <span class="c"># 查看生成的密匙</span>
 </code></pre>
 </div>
 
@@ -436,7 +436,7 @@
 
 <p>查询提交信息（下面的选项可以合并使用）：</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>git log --author<span class="o">=</span>pengzhen  <span class="c"># 查询特定作者的提交记录</span>
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>git log --author<span class="o">=</span>landslipzy  <span class="c"># 查询特定作者的提交记录</span>
 <span class="gp">$ </span>git log --oneline          <span class="c"># 显示提交记录时，只显示一行</span>
 <span class="gp">$ </span>git log --name-only        <span class="c"># 查询提交记录时，同时显示修改的文件列表</span>
 </code></pre>
